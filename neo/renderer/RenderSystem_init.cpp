@@ -313,7 +313,7 @@ idCVar r_renderMode( "r_renderMode", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_IN
 idCVar r_psxVertexJitter( "r_psxVertexJitter", "0.5", CVAR_RENDERER | CVAR_FLOAT | CVAR_NEW, "", 0.0f, 0.75f );
 idCVar r_psxAffineTextures( "r_psxAffineTextures", "1", CVAR_RENDERER | CVAR_FLOAT | CVAR_NEW, "" );
 
-idCVar r_useMaskedOcclusionCulling( "r_useMaskedOcclusionCulling", "1", CVAR_RENDERER | CVAR_BOOL | CVAR_NEW, "SIMD optimized software culling by Intel" );
+idCVar r_useMaskedOcclusionCulling( "r_useMaskedOcclusionCulling", "1", CVAR_RENDERER | CVAR_BOOL | CVAR_NOCHEAT | CVAR_NEW, "SIMD optimized software culling by Intel" );
 // RB end
 
 const char* fileExten[4] = { "tga", "png", "jpg", "exr" };
