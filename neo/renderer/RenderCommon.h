@@ -193,8 +193,6 @@ public:
 	int						lastModifiedFrameNum;	// to determine if it is constantly changing,
 	// and should go in the dynamic frame memory, or kept
 	// in the cached memory
-	bool					archived;				// for demo writing
-
 
 	// derived information
 	idPlane					lightProject[4];		// old style light projection where Z and W are flipped and projected lights lightProject[3] is divided by ( zNear + zFar )
@@ -243,18 +241,13 @@ public:
 	int							lastModifiedFrameNum;	// to determine if it is constantly changing,
 	// and should go in the dynamic frame memory, or kept
 	// in the cached memory
-	bool						archived;				// for demo writing
 
 	// derived information
-	//idPlane						lightProject[4];		// old style light projection where Z and W are flipped and projected lights lightProject[3] is divided by ( zNear + zFar )
-	//idRenderMatrix				baseLightProject;		// global xyz1 to projected light strq
 	idRenderMatrix				inverseBaseProbeProject;// transforms the zero-to-one cube to exactly cover the light in world space
 
 	idBounds					globalProbeBounds;
 
 	areaReference_t* 			references;				// each area the light is present in will have a lightRef
-	//idInteraction* 			firstInteraction;		// doubly linked list
-	//idInteraction* 			lastInteraction;
 
 	idImage* 					irradianceImage;		// cubemap image used for diffuse IBL by backend
 	idImage* 					radianceImage;			// cubemap image used for specular IBL by backend
