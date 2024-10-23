@@ -4865,11 +4865,11 @@ void idRenderBackend::TemporalAAPass( const viewDef_t* _viewDef )
 	renderLog.CloseMainBlock();
 }
 
-idVec2 idRenderBackend::GetCurrentPixelOffset() const
+idVec2 idRenderBackend::GetCurrentPixelOffset( int frameIndex ) const
 {
 	if( taaPass )
 	{
-		return taaPass->GetCurrentPixelOffset();
+		return taaPass->GetCurrentPixelOffset( frameIndex );
 	}
 
 	return idVec2( 0, 0 );
@@ -5309,6 +5309,8 @@ void idRenderBackend::ExecuteBackEndCommands( const emptyCommand_t* cmds )
 
 	resolutionScale.SetCurrentGPUFrameTime( commonLocal.GetRendererGPUMicroseconds() );
 
+	// make sure the swapchains and rendertargets have the size requested
+	// by the window system
 	ResizeImages();
 
 	if( cmds->commandId == RC_NOP && !cmds->next )
@@ -5319,7 +5321,6 @@ void idRenderBackend::ExecuteBackEndCommands( const emptyCommand_t* cmds )
 	if( renderSystem->GetStereo3DMode() != STEREO3D_OFF )
 	{
 		StereoRenderExecuteBackEndCommands( cmds );
-		//renderLog.EndFrame();
 		return;
 	}
 
@@ -5440,7 +5441,7 @@ void idRenderBackend::ExecuteBackEndCommands( const emptyCommand_t* cmds )
 				break;
 
 			default:
-				common->Error( "RB_ExecuteBackEndCommands: bad commandId" );
+				common->Error( "ExecuteBackEndCommands: bad commandId" );
 				break;
 		}
 	}
@@ -5459,8 +5460,6 @@ void idRenderBackend::ExecuteBackEndCommands( const emptyCommand_t* cmds )
 		common->Printf( "3d: %i, 2d: %i, SetBuf: %i, CpyRenders: %i, CpyFrameBuf: %i\n", c_draw3d, c_draw2d, c_setBuffers, c_copyRenders, pc.c_copyFrameBuffer );
 		pc.c_copyFrameBuffer = 0;
 	}
-
-	//renderLog.EndFrame();
 }
 
 
@@ -5482,7 +5481,23 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	OPTICK_GPU_CONTEXT( ( void* ) commandList->getNativeObject( commandObject ) );
 	//OPTICK_GPU_EVENT( "DrawView" );	// SRS - now in DrawView() for 3D vs. GUI
 
-	renderLog.OpenBlock( "Render_DrawViewInternal", colorRed );
+	// ugly but still faster than building the string
+	if( !_viewDef->viewEntitys || _viewDef->is2Dgui )
+	{
+		renderLog.OpenBlock( "Render_DrawView2D", colorRed );
+	}
+	else if( stereoEye == -1 )
+	{
+		renderLog.OpenBlock( "Render_DrawView3D_LeftEye", colorRed );
+	}
+	else if( stereoEye == 1 )
+	{
+		renderLog.OpenBlock( "Render_DrawView3D_RightEye", colorRed );
+	}
+	else if( stereoEye == 0 )
+	{
+		renderLog.OpenBlock( "Render_DrawView3D", colorRed );
+	}
 
 	//-------------------------------------------------
 	// guis can wind up referencing purged images that need to be loaded.
@@ -5860,6 +5875,7 @@ Experimental feature
 */
 void idRenderBackend::MotionBlur()
 {
+#if 0
 	if( !viewDef->viewEntitys )
 	{
 		// 3D views only
@@ -5958,6 +5974,7 @@ void idRenderBackend::MotionBlur()
 	globalImages->currentDepthImage->Bind();
 
 	DrawElementsWithCounters( &unitSquareSurface );
+#endif
 }
 
 /*
