@@ -4723,9 +4723,9 @@ void idRenderBackend::DrawMotionVectors()
 	{
 		const drawSurf_t* surf = drawSurfs[ surfNum ];
 
-		if( !surf->space->weaponDepthHack && !surf->space->skipMotionBlur && !surf->material->HasSubview() )
+		if( !surf->space->weaponDepthHack && !surf->space->skipMotionBlur && !surf->material->HasSubview() && !surf->space->isGuiSurface )
 		{
-			// Apply motion blur to this object
+			// don't apply TAA to this object
 			continue;
 		}
 
