@@ -102,7 +102,7 @@ float Visibility_SmithGGX( half vdotN, half ldotN, float alpha )
 	return ( 1.0 / max( V1 * V2, 0.15 ) );
 }
 
-// HACK calculate roughness from D3 gloss maps
+// RB: HACK calculate roughness from D3 gloss maps
 float EstimateLegacyRoughness( float3 specMapSRGB )
 {
 	float Y = dot( LUMINANCE_SRGB.rgb, specMapSRGB );
@@ -114,6 +114,65 @@ float EstimateLegacyRoughness( float3 specMapSRGB )
 
 	return roughness;
 }
+
+// Kennedith98 begin
+// takes a gamma-space specular texture
+// outputs F0 color and roughness for PBR
+void PBRFromSpecmap( float3 specMap, out float3 F0, out float roughness )
+{
+	// desaturate specular
+	float specLum = max( specMap.r, max( specMap.g, specMap.b ) );
+
+	// fresnel base
+	F0 = _float3( 0.04 );
+
+	// fresnel contrast (will tighten low spec and broaden high spec, stops specular looking too flat or shiny)
+	float contrastMid = 0.214;
+	float contrastAmount = 2.0;
+	float contrast = saturate( ( specLum - contrastMid ) / ( 1 - contrastMid ) ); //high spec
+	contrast += saturate( specLum / contrastMid ) - 1.0; //low spec
+	contrast = exp2( contrastAmount * contrast );
+	F0 *= contrast;
+
+	// reverse blinn BRDF to perfectly match vanilla specular brightness
+	// fresnel is affected when specPow is 0, experimentation is desmos showed that happens at F0/4
+	float linearBrightness = Linear1( 2.0 * specLum );
+	float specPow = max( 0.0, ( ( 8 * linearBrightness ) / F0.y ) - 2.0 );
+	F0 *= min( 1.0, linearBrightness / ( F0.y * 0.25 ) );
+
+	// specular power to roughness
+	roughness = sqrt( 2.0 / ( specPow + 2.0 ) );
+
+	// RB: do another sqrt because PBR shader squares it
+	roughness = sqrt( roughness );
+}
+
+// takes roughness, unnormalized 0-1 normalmap texture and the distance to the camera
+// returns roughness
+float ApplySpecularAA( float roughness, float3 bumpMap, float camDist )
+{
+	float normLen = saturate( length( bumpMap.xyz * 2.0 - 1.0 ) );
+
+	// roughness to specular power
+	float specPow = ( 2.0 / ( roughness * roughness ) ) - 2.0;
+
+	// toksvig AA to prevent speckles from sharp normal edges
+	float specAA = 1.0 / ( 1.0 + specPow * ( ( 1.0 / normLen ) - 1.0 ) );
+
+	// fade out AA close to the camera to prevent dull highlights close up
+	float distMax = 100.0;
+	float disMin = 1.0;
+	specAA = lerp( specAA, 1.0, smoothstep( disMin, distMax, camDist ) );
+
+	//apply AA
+	specPow *= specAA;
+
+	// specular power to roughness
+	roughness = sqrt( 2.0 / ( specPow + 2.0 ) );
+
+	return roughness;
+}
+// Kennedith98 end
 
 // Environment BRDF approximations
 // see s2013_pbs_black_ops_2_notes.pdf
