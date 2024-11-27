@@ -1704,7 +1704,10 @@ void idRenderBackend::RenderInteractions( const drawSurf_t* surfList, const view
 
 		// apply the world-global overbright and the 2x factor for specular
 		idVec4 diffuseColor = lightColor;
-		idVec4 specularColor = lightColor * 1.0f;	// RB: skip 2x factor for specular PBR formulars
+
+		// RB: the BFG edition has exagerated specular lighting compared to vanilla Doom 3
+		// turn this back to 1.0
+		idVec4 specularColor = lightColor * 1.0f;
 // jmarshall
 		if( vLight->lightDef->parms.noSpecular )
 		{
