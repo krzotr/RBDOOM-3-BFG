@@ -224,10 +224,19 @@ void main( PS_IN fragment, out PS_OUT result )
 	float3 kD = ( float3( 1.0, 1.0, 1.0 ) - kS ) * ( 1.0 - metallic );
 
 #else
+
+#if KENNY_PBR
+	float3 diffuseColor = diffuseMap;
+	float3 specularColor;
+	float roughness;
+
+	PBRFromSpecmap( specMapSRGB.rgb, specularColor, roughness );
+#else
 	const float roughness = EstimateLegacyRoughness( specMapSRGB.rgb );
 
 	float3 diffuseColor = diffuseMap;
 	float3 specularColor = specMap.rgb;
+#endif
 
 #if defined( DEBUG_PBR )
 	diffuseColor = float3( 0.0, 0.0, 0.0 );

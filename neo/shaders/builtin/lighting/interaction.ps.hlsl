@@ -132,7 +132,7 @@ void main( PS_IN fragment, out PS_OUT result )
 	float3 diffuseColor = baseColor * ( 1.0 - metallic );
 	float3 specularColor = lerp( dielectricColor, baseColor, metallic );
 
-#elif 1
+#elif KENNY_PBR
 	float3 diffuseColor = diffuseMap;
 	float3 specularColor;
 	float roughness;
@@ -171,8 +171,13 @@ void main( PS_IN fragment, out PS_OUT result )
 	// disney GGX
 	float D = ( hdotN * hdotN ) * ( rrrr - 1.0 ) + 1.0;
 	float VFapprox = ( ldotH * ldotH ) * ( roughness + 0.5 );
-	//float3 specularLight = ( rrrr / ( 4.0 * PI * D * D * VFapprox ) ) * ldotN * reflectColor;
+
+#if KENNY_PBR
 	float3 specularLight = ( rrrr / ( 4.0 * D * D * VFapprox ) ) * ldotN * reflectColor;
+#else
+	float3 specularLight = ( rrrr / ( 4.0 * PI * D * D * VFapprox ) ) * ldotN * reflectColor;
+#endif
+
 
 #if 0
 	result.color = float4( _float3( VFapprox ), 1.0 );

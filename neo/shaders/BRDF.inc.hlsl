@@ -115,6 +115,8 @@ float EstimateLegacyRoughness( float3 specMapSRGB )
 	return roughness;
 }
 
+#define KENNY_PBR 1
+
 // Kennedith98 begin
 // takes a gamma-space specular texture
 // outputs F0 color and roughness for PBR

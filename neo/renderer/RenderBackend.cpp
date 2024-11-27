@@ -1704,7 +1704,7 @@ void idRenderBackend::RenderInteractions( const drawSurf_t* surfList, const view
 
 		// apply the world-global overbright and the 2x factor for specular
 		idVec4 diffuseColor = lightColor;
-		idVec4 specularColor = lightColor * 2.0f;	// RB: skip 2x factor for specular PBR formulars
+		idVec4 specularColor = lightColor * 1.0f;	// RB: skip 2x factor for specular PBR formulars
 // jmarshall
 		if( vLight->lightDef->parms.noSpecular )
 		{
