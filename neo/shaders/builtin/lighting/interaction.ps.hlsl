@@ -116,9 +116,9 @@ void main( PS_IN fragment, out PS_OUT result )
 	float hdotN = clamp( dot3( halfAngleVector, localNormal ), 0.0, 1.0 );
 
 #if USE_PBR
+	// RB: roughness 0 somehow is not shiny so we clamp it
+	float roughness = max( 0.05, specMapSRGB.r );
 	const float metallic = specMapSRGB.g;
-	const float roughness = specMapSRGB.r;
-	const float glossiness = 1.0 - roughness;
 
 	// the vast majority of real-world materials (anything not metal or gems) have F(0)
 	// values in a very narrow range (~0.02 - 0.08)

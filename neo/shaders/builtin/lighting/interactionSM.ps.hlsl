@@ -474,9 +474,9 @@ void main( PS_IN fragment, out PS_OUT result )
 	float hdotN = clamp( dot3( halfAngleVector, localNormal ), 0.0, 1.0 );
 
 #if USE_PBR
+	// RB: roughness 0 somehow is not shiny so we clamp it
+	float roughness = max( 0.05, specMapSRGB.r );
 	const float metallic = specMapSRGB.g;
-	const float roughness = specMapSRGB.r;
-	const float glossiness = 1.0 - roughness;
 
 	// the vast majority of real-world materials (anything not metal or gems) have F(0)
 	// values in a very narrow range (~0.02 - 0.08)
@@ -497,10 +497,19 @@ void main( PS_IN fragment, out PS_OUT result )
 
 	PBRFromSpecmap( specMapSRGB.rgb, specularColor, roughness );
 #else
-	const float roughness = EstimateLegacyRoughness( specMapSRGB.rgb );
+	float roughness = EstimateLegacyRoughness( specMapSRGB.rgb );
 
 	float3 diffuseColor = diffuseMap;
 	float3 specularColor = specMapSRGB.rgb; // RB: should be linear but it looks too flat
+#endif
+
+#if 0
+	// specular AA - https://yusuketokuyoshi.com/papers/2021/Tokuyoshi2021SAA.pdf
+
+	//roughness = IsotropicNDFFiltering( localNormal, roughness * roughness );
+
+	float r2 = roughness * roughness;
+	roughness = AxisAlignedNDFFiltering( halfAngleVector, float2( r2, r2 ) ).x;
 #endif
 
 
@@ -531,6 +540,12 @@ void main( PS_IN fragment, out PS_OUT result )
 	float VFapprox = ( ldotH * ldotH ) * ( roughness + 0.5 );
 
 #if KENNY_PBR
+	// specular cook-torrance brdf (visibility, geo and denom in one)
+	//float D = Distribution_GGX_Disney( hdotN, rr );
+	//float Vis = Visibility_Schlick( vdotN, lambert, rr );
+	//float3 F = Fresnel_Schlick( reflectColor, vdotH );
+	//float3 specularLight = D * Vis * F;
+
 	float3 specularLight = ( rrrr / ( 4.0 * D * D * VFapprox ) ) * ldotN * reflectColor;
 #else
 	float3 specularLight = ( rrrr / ( 4.0 * PI * D * D * VFapprox ) ) * ldotN * reflectColor;

@@ -994,7 +994,14 @@ void idRenderBackend::DrawSingleInteraction( drawInteraction_t* din, bool useFas
 			return;
 		}
 
-		if( r_skipDiffuse.GetInteger() == 2 )
+		if( r_skipDiffuse.GetInteger() == 3 )
+		{
+			// RB: for testing specular aliasing
+			din->diffuseImage = globalImages->redClayImage;
+			din->specularImage = globalImages->plasticSpecImage;
+			din->specularColor = colorWhite;
+		}
+		else if( r_skipDiffuse.GetInteger() == 2 )
 		{
 			din->diffuseImage = globalImages->whiteImage;
 		}
