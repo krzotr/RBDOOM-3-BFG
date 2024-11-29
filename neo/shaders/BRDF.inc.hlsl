@@ -124,7 +124,8 @@ float EstimateLegacyRoughness( float3 specMapSRGB )
 void PBRFromSpecmap( float3 specMap, out float3 F0, out float roughness )
 {
 	// desaturate specular
-	float specLum = max( specMap.r, max( specMap.g, specMap.b ) );
+	//float specLum = max( specMap.r, max( specMap.g, specMap.b ) );
+	float specLum = dot( LUMINANCE_SRGB.rgb, specMap );
 
 	// fresnel base
 	F0 = _float3( 0.04 );
@@ -145,6 +146,15 @@ void PBRFromSpecmap( float3 specMap, out float3 F0, out float roughness )
 
 	// specular power to roughness
 	roughness = sqrt( 2.0 / ( specPow + 2.0 ) );
+
+#if 1
+	// RB: try to distinct between dielectrics and metal materials
+	float glossiness = saturate( 1.0 - roughness );
+	float metallic = step( 0.7, glossiness );
+
+	float3 glossColor = Linear3( specMap.rgb );
+	F0 = lerp( F0, glossColor, metallic );
+#endif
 
 	// RB: do another sqrt because PBR shader squares it
 	roughness = sqrt( roughness );
