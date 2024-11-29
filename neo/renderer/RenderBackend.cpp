@@ -336,7 +336,14 @@ void idRenderBackend::BindVariableStageImage( const textureStage_t* texture, con
 	{
 		if( texture->image != NULL )
 		{
-			texture->image->Bind();
+			if( texture->image->IsLoaded() && !texture->image->IsDefaulted() )
+			{
+				texture->image->Bind();
+			}
+			else
+			{
+				globalImages->defaultImage->Bind();
+			}
 		}
 	}
 }
@@ -356,7 +363,6 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 	// texgens
 	if( pStage->texture.texgen == TG_REFLECT_CUBE )
 	{
-
 		// see if there is also a bump map specified
 		const shaderStage_t* bumpStage = surf->material->GetBumpStage();
 		if( bumpStage != NULL )
@@ -387,7 +393,59 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 				renderProgManager.BindShader_Environment();
 			}
 		}
+	}
+	else if( pStage->texture.texgen == TG_REFLECT_CUBE2 )
+	{
+		idVec4 probeMins, probeMaxs, probeCenter;
 
+		probeMins[0] = viewDef->globalProbeBounds[0][0];
+		probeMins[1] = viewDef->globalProbeBounds[0][1];
+		probeMins[2] = viewDef->globalProbeBounds[0][2];
+		probeMins[3] = viewDef->globalProbeBounds.IsCleared() ? 0.0f : 1.0f;
+
+		probeMaxs[0] = viewDef->globalProbeBounds[1][0];
+		probeMaxs[1] = viewDef->globalProbeBounds[1][1];
+		probeMaxs[2] = viewDef->globalProbeBounds[1][2];
+		probeMaxs[3] = 0.0f;
+
+		idVec3 center = viewDef->globalProbeBounds.GetCenter();
+		probeCenter.Set( center.x, center.y, center.z, 1.0f );
+
+		SetVertexParm( RENDERPARM_WOBBLESKY_X, probeMins.ToFloatPtr() );
+		SetVertexParm( RENDERPARM_WOBBLESKY_Y, probeMaxs.ToFloatPtr() );
+		SetVertexParm( RENDERPARM_WOBBLESKY_Z, probeCenter.ToFloatPtr() );
+
+		// specular cubemap blend weights
+		renderProgManager.SetUniformValue( RENDERPARM_LOCALLIGHTORIGIN, viewDef->radianceImageBlends.ToFloatPtr() );
+
+		// see if there is also a bump map specified
+		const shaderStage_t* bumpStage = surf->material->GetBumpStage();
+		if( bumpStage != NULL )
+		{
+			// per-pixel reflection mapping with bump mapping
+			GL_SelectTexture( 0 );
+			bumpStage->texture.image->Bind();
+
+			GL_SelectTexture( 1 );
+			viewDef->radianceImages[0]->Bind();
+
+			GL_SelectTexture( 2 );
+			viewDef->radianceImages[1]->Bind();
+
+			GL_SelectTexture( 3 );
+			viewDef->radianceImages[2]->Bind();
+
+			GL_SelectTexture( 0 );
+
+			if( surf->jointCache )
+			{
+				renderProgManager.BindShader_BumpyEnvironment2Skinned();
+			}
+			else
+			{
+				renderProgManager.BindShader_BumpyEnvironment2();
+			}
+		}
 	}
 	else if( pStage->texture.texgen == TG_SKYBOX_CUBE )
 	{
@@ -518,7 +576,7 @@ void idRenderBackend::FinishStageTexturing( const shaderStage_t* pStage, const d
 		GL_SelectTexture( 0 );
 	}
 
-	if( pStage->texture.texgen == TG_REFLECT_CUBE )
+	if( pStage->texture.texgen == TG_REFLECT_CUBE || pStage->texture.texgen == TG_REFLECT_CUBE2 )
 	{
 		// see if there is also a bump map specified
 		const shaderStage_t* bumpStage = surf->material->GetBumpStage();
@@ -531,6 +589,7 @@ void idRenderBackend::FinishStageTexturing( const shaderStage_t* pStage, const d
 		{
 			// per-pixel reflection mapping without bump mapping
 		}
+
 		renderProgManager.Unbind();
 	}
 }
