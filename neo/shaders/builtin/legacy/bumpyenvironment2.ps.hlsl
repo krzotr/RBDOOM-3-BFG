@@ -84,7 +84,7 @@ void main( PS_IN fragment, out PS_OUT result )
 
 	float3 reflectionVector = reflect( globalView, globalNormal );
 
-#if 0
+#if 1
 	// parallax box correction using portal area bounds
 	float hitScale = 0.0;
 	float3 bounds[2];
@@ -97,7 +97,7 @@ void main( PS_IN fragment, out PS_OUT result )
 	bounds[1].z = rpWobbleSkyY.z;
 
 	// global fragment position
-	float3 rayStart = fragment.texcoord7.xyz;
+	float3 rayStart = globalPosition;
 
 	// we can't start inside the box so move this outside and use the reverse path
 	rayStart += reflectionVector * 10000.0;
