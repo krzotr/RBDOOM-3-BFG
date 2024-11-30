@@ -537,6 +537,110 @@ static void R_FindClosestEnvironmentProbes()
 		tr.viewDef->irradianceImage = nearest->irradianceImage;
 	}
 
+	// form a triangle of the 3 closest probes
+	idVec3 verts[3];
+	for( int i = 0; i < 3; i++ )
+	{
+		verts[i] = viewEnvprobes[0]->parms.origin;
+	}
+
+	for( int i = 0; i < viewEnvprobes.Num() && i < 3; i++ )
+	{
+		RenderEnvprobeLocal* vProbe = viewEnvprobes[i];
+
+		verts[i] = vProbe->parms.origin;
+	}
+
+	idVec3 closest = R_ClosestPointPointTriangle( testOrigin, verts[0], verts[1], verts[2] );
+	idVec3 bary;
+
+	// find the barycentric coordinates
+	float denom = idWinding::TriangleArea( verts[0], verts[1], verts[2] );
+	if( denom == 0 )
+	{
+		// triangle is line
+		float t;
+
+		R_ClosestPointOnLineSegment( testOrigin, verts[0], verts[1], t );
+
+		bary.Set( 1.0f - t, t, 0 );
+	}
+	else
+	{
+		float	a, b, c;
+
+		a = idWinding::TriangleArea( closest, verts[1], verts[2] ) / denom;
+		b = idWinding::TriangleArea( closest, verts[2], verts[0] ) / denom;
+		c = idWinding::TriangleArea( closest, verts[0], verts[1] ) / denom;
+
+		bary.Set( a, b, c );
+	}
+
+	tr.viewDef->radianceImageBlends.Set( bary.x, bary.y, bary.z, 0.0f );
+
+	for( int i = 0; i < viewEnvprobes.Num() && i < 3; i++ )
+	{
+		if( !viewEnvprobes[i]->radianceImage->IsDefaulted() )
+		{
+			tr.viewDef->radianceImages[i] = viewEnvprobes[i]->radianceImage;
+		}
+	}
+}
+
+// this one tries to interpolate between probes over time
+static void R_FindClosestEnvironmentProbes2()
+{
+	// set safe defaults
+	tr.viewDef->globalProbeBounds.Clear();
+
+	tr.viewDef->irradianceImage = globalImages->defaultUACIrradianceCube;
+	tr.viewDef->radianceImageBlends.Set( 1, 0, 0, 0 );
+	for( int i = 0; i < 3; i++ )
+	{
+		tr.viewDef->radianceImages[i] = globalImages->defaultUACRadianceCube;
+	}
+
+	// early out
+	if( tr.viewDef->areaNum == -1 || tr.viewDef->isSubview )
+	{
+		return;
+	}
+
+	idList<RenderEnvprobeLocal*, TAG_RENDER_ENVPROBE> viewEnvprobes;
+	for( int i = 0; i < tr.primaryWorld->envprobeDefs.Num(); i++ )
+	{
+		RenderEnvprobeLocal* vProbe = tr.primaryWorld->envprobeDefs[i];
+		if( vProbe )
+		{
+			// check for being closed off behind a door
+			if( r_useLightAreaCulling.GetBool() && vProbe->areaNum != -1 && !tr.viewDef->connectedAreas[ vProbe->areaNum ] )
+			{
+				continue;
+			}
+
+			viewEnvprobes.AddUnique( vProbe );
+		}
+	}
+
+	if( viewEnvprobes.Num() == 0 )
+	{
+		return;
+	}
+
+	idVec3 testOrigin = tr.viewDef->renderView.vieworg;
+
+	// sort by distance
+	// RB: each Doom 3 level has ~50 - 150 probes so this should be ok for each frame
+	viewEnvprobes.SortWithTemplate( idSort_CompareEnvprobe( testOrigin ) );
+
+	RenderEnvprobeLocal* nearest = viewEnvprobes[0];
+	tr.viewDef->globalProbeBounds = nearest->globalProbeBounds;
+
+	if( nearest->irradianceImage->IsLoaded() && !nearest->irradianceImage->IsDefaulted() )
+	{
+		tr.viewDef->irradianceImage = nearest->irradianceImage;
+	}
+
 	static float oldBarycentricWeights[3] = {0};
 	static int oldIndexes[3] = {0};
 	static int timeInterpolateStart = 0;

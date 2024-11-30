@@ -1840,8 +1840,8 @@ void idRenderBackend::GetCurrentBindingLayout( int type )
 			auto& bindings = desc[1].bindings;
 			bindings[0].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 0 )->GetTextureID();
 			bindings[1].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 1 )->GetTextureID();
-			bindings[1].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 2 )->GetTextureID();
-			bindings[1].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 3 )->GetTextureID();
+			bindings[2].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 2 )->GetTextureID();
+			bindings[3].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 3 )->GetTextureID();
 		}
 
 		if( R_UsePixelatedLook() )

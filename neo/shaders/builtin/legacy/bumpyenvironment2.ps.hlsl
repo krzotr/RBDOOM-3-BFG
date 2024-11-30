@@ -47,6 +47,7 @@ struct PS_IN
 	float3 texcoord2	: TEXCOORD2_centroid;
 	float3 texcoord3	: TEXCOORD3_centroid;
 	float3 texcoord4	: TEXCOORD4_centroid;
+	float4 texcoord5	: TEXCOORD5_centroid;
 	float4 color		: COLOR0;
 };
 
@@ -77,10 +78,11 @@ void main( PS_IN fragment, out PS_OUT result )
 	globalNormal.y = dot3( localNormal, fragment.texcoord3 );
 	globalNormal.z = dot3( localNormal, fragment.texcoord4 );
 
-	float3 globalEye = normalize( fragment.texcoord1 );
+	float3 globalPosition = fragment.texcoord5.xyz;
 
-	float3 reflectionVector = globalNormal * dot3( globalEye, globalNormal );
-	reflectionVector = ( reflectionVector * 2.0f ) - globalEye;
+	float3 globalView = normalize( globalPosition - rpGlobalEyePos.xyz );
+
+	float3 reflectionVector = reflect( globalView, globalNormal );
 
 #if 0
 	// parallax box correction using portal area bounds

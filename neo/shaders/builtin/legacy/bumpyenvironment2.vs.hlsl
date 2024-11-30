@@ -51,22 +51,23 @@ struct VS_OUT
 	float3 texcoord2	: TEXCOORD2_centroid;
 	float3 texcoord3	: TEXCOORD3_centroid;
 	float3 texcoord4	: TEXCOORD4_centroid;
+	float4 texcoord5	: TEXCOORD5_centroid;
 	float4 color		: COLOR0;
 };
 // *INDENT-ON*
 
 void main( VS_IN vertex, out VS_OUT result )
 {
-#if USE_GPU_SKINNING
 	float4 vNormal = vertex.normal * 2.0 - 1.0;
 	float4 vTangent = vertex.tangent * 2.0 - 1.0;
-	float3 vBinormal = cross( vNormal.xyz, vTangent.xyz ) * vTangent.w;
+	float3 vBitangent = cross( vNormal.xyz, vTangent.xyz ) * vTangent.w;
 
-//--------------------------------------------------------------
-// GPU transformation of the normal / binormal / bitangent
-//
-// multiplying with 255.1 give us the same result and is faster than floor( w * 255 + 0.5 )
-//--------------------------------------------------------------
+#if USE_GPU_SKINNING
+	//--------------------------------------------------------------
+	// GPU transformation of the normal / tangent / bitangent
+	//
+	// multiplying with 255.1 give us the same result and is faster than floor( w * 255 + 0.5 )
+	//--------------------------------------------------------------
 	const float w0 = vertex.color2.x;
 	const float w1 = vertex.color2.y;
 	const float w2 = vertex.color2.z;
@@ -105,11 +106,11 @@ void main( VS_IN vertex, out VS_OUT result )
 	tangent.z = dot3( matZ, vTangent );
 	tangent = normalize( tangent );
 
-	float3 binormal;
-	binormal.x = dot3( matX, vBinormal );
-	binormal.y = dot3( matY, vBinormal );
-	binormal.z = dot3( matZ, vBinormal );
-	binormal = normalize( binormal );
+	float3 bitangent;
+	bitangent.x = dot3( matX, vBitangent );
+	bitangent.y = dot3( matY, vBitangent );
+	bitangent.z = dot3( matZ, vBitangent );
+	bitangent = normalize( bitangent );
 
 	float4 modelPosition;
 	modelPosition.x = dot4( matX, vertex.position );
@@ -117,12 +118,35 @@ void main( VS_IN vertex, out VS_OUT result )
 	modelPosition.z = dot4( matZ, vertex.position );
 	modelPosition.w = 1.0;
 
+#else
+	float4 modelPosition = vertex.position;
+	float3 normal = vNormal.xyz;
+	float3 tangent = vTangent.xyz;
+	float3 bitangent = vBitangent.xyz;
+#endif
+
 	result.position.x = dot4( modelPosition, rpMVPmatrixX );
 	result.position.y = dot4( modelPosition, rpMVPmatrixY );
 	result.position.z = dot4( modelPosition, rpMVPmatrixZ );
 	result.position.w = dot4( modelPosition, rpMVPmatrixW );
 
+	result.position.xyz = psxVertexJitter( result.position );
+
 	result.texcoord0 = vertex.texcoord.xy;
+
+	// PSX affine texture mapping
+#if 0
+	if( rpPSXDistortions.z > 0.0 )
+	{
+		float distance = length( rpLocalViewOrigin - modelPosition );
+		float warp =  psxAffineWarp( distance );
+
+		result.texcoord0.z = warp;
+		result.texcoord0.xy *= warp;
+		result.texcoord1.xy *= warp;
+		result.texcoord2.xy *= warp;
+	}
+#endif
 
 	float4 toEye = rpLocalViewOrigin - modelPosition;
 
@@ -134,46 +158,20 @@ void main( VS_IN vertex, out VS_OUT result )
 	result.texcoord3.x = dot3( tangent, rpModelMatrixY );
 	result.texcoord4.x = dot3( tangent, rpModelMatrixZ );
 
-	result.texcoord2.y = dot3( binormal, rpModelMatrixX );
-	result.texcoord3.y = dot3( binormal, rpModelMatrixY );
-	result.texcoord4.y = dot3( binormal, rpModelMatrixZ );
-
-	result.texcoord2.z = dot3( normal, rpModelMatrixX );
-	result.texcoord3.z = dot3( normal, rpModelMatrixY );
-	result.texcoord4.z = dot3( normal, rpModelMatrixZ );
-#else
-	float4 normal = vertex.normal * 2.0 - 1.0;
-	float4 tangent = vertex.tangent * 2.0 - 1.0;
-	float3 binormal = cross( normal.xyz, tangent.xyz ) * tangent.w;
-
-	result.position.x = dot4( vertex.position, rpMVPmatrixX );
-	result.position.y = dot4( vertex.position, rpMVPmatrixY );
-	result.position.z = dot4( vertex.position, rpMVPmatrixZ );
-	result.position.w = dot4( vertex.position, rpMVPmatrixW );
-
-	result.texcoord0 = vertex.texcoord.xy;
-
-	float4 toEye = rpLocalViewOrigin - vertex.position;
-
-	result.texcoord1.x = dot3( toEye, rpModelMatrixX );
-	result.texcoord1.y = dot3( toEye, rpModelMatrixY );
-	result.texcoord1.z = dot3( toEye, rpModelMatrixZ );
-
-	result.texcoord2.x = dot3( tangent, rpModelMatrixX );
-	result.texcoord3.x = dot3( tangent, rpModelMatrixY );
-	result.texcoord4.x = dot3( tangent, rpModelMatrixZ );
-
-	result.texcoord2.y = dot3( binormal, rpModelMatrixX );
-	result.texcoord3.y = dot3( binormal, rpModelMatrixY );
-	result.texcoord4.y = dot3( binormal, rpModelMatrixZ );
+	result.texcoord2.y = dot3( bitangent, rpModelMatrixX );
+	result.texcoord3.y = dot3( bitangent, rpModelMatrixY );
+	result.texcoord4.y = dot3( bitangent, rpModelMatrixZ );
 
 	result.texcoord2.z = dot3( normal, rpModelMatrixX );
 	result.texcoord3.z = dot3( normal, rpModelMatrixY );
 	result.texcoord4.z = dot3( normal, rpModelMatrixZ );
 
-#endif
-
-	result.position.xyz = psxVertexJitter( result.position );
+	float4 worldPosition;
+	worldPosition.x = dot4( modelPosition, rpModelMatrixX );
+	worldPosition.y = dot4( modelPosition, rpModelMatrixY );
+	worldPosition.z = dot4( modelPosition, rpModelMatrixZ );
+	worldPosition.w = dot4( modelPosition, rpModelMatrixW );
+	result.texcoord5 = worldPosition;
 
 	result.color = rpColor;
 }
