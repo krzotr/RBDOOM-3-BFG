@@ -551,6 +551,10 @@ static void R_FindClosestEnvironmentProbes()
 		verts[i] = vProbe->parms.origin;
 	}
 
+	tr.viewDef->probePositions->Set( verts[0].x, verts[0].y, verts[0].z, 1 );
+	tr.viewDef->probePositions->Set( verts[1].x, verts[1].y, verts[1].z, 1 );
+	tr.viewDef->probePositions->Set( verts[2].x, verts[2].y, verts[2].z, 1 );
+
 	idVec3 closest = R_ClosestPointPointTriangle( testOrigin, verts[0], verts[1], verts[2] );
 	idVec3 bary;
 
@@ -662,6 +666,10 @@ static void R_FindClosestEnvironmentProbes2()
 		verts[i] = vProbe->parms.origin;
 		triIndexes[i] = vProbe->index;
 	}
+
+	tr.viewDef->probePositions->Set( verts[0].x, verts[0].y, verts[0].z, 1 );
+	tr.viewDef->probePositions->Set( verts[1].x, verts[1].y, verts[1].z, 1 );
+	tr.viewDef->probePositions->Set( verts[2].x, verts[2].y, verts[2].z, 1 );
 
 	// don't assume tri changed if we just moved inside a triangle and only the indixes switched
 	// because one vertex is closer than before

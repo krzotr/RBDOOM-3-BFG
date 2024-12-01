@@ -415,6 +415,10 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 		SetVertexParm( RENDERPARM_WOBBLESKY_Y, probeMaxs.ToFloatPtr() );
 		SetVertexParm( RENDERPARM_WOBBLESKY_Z, probeCenter.ToFloatPtr() );
 
+		SetVertexParm( RENDERPARM_TEXGEN_0_S, viewDef->probePositions[0].ToFloatPtr() );
+		SetVertexParm( RENDERPARM_TEXGEN_0_T, viewDef->probePositions[1].ToFloatPtr() );
+		SetVertexParm( RENDERPARM_TEXGEN_0_Q, viewDef->probePositions[2].ToFloatPtr() );
+
 		// specular cubemap blend weights
 		renderProgManager.SetUniformValue( RENDERPARM_LOCALLIGHTORIGIN, viewDef->radianceImageBlends.ToFloatPtr() );
 
@@ -5656,6 +5660,19 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 		}
 
 		SetVertexParm( RENDERPARM_PSX_DISTORTIONS, parm );
+
+		// make sure rpWindowCoord is set even without post processing surfaces in the view
+		int x = viewDef->viewport.x1;
+		int y = viewDef->viewport.y1;
+		int	w = viewDef->viewport.x2 - viewDef->viewport.x1 + 1;
+		int	h = viewDef->viewport.y2 - viewDef->viewport.y1 + 1;
+
+		float windowCoordParm[4];
+		windowCoordParm[0] = 1.0f / w;
+		windowCoordParm[1] = 1.0f / h;
+		windowCoordParm[2] = w;
+		windowCoordParm[3] = h;
+		SetFragmentParm( RENDERPARM_WINDOWCOORD, windowCoordParm ); // rpWindowCoord
 	}
 
 	//-------------------------------------------------

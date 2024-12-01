@@ -623,12 +623,13 @@ struct viewDef_t
 	// RB: collect environment probes like lights
 	viewEnvprobe_t*		viewEnvprobes;
 
-	// RB: nearest probe for now
+	// RB: nearest 3 probes for now
 	idBounds			globalProbeBounds;
 	idRenderMatrix		inverseBaseEnvProbeProject;	// the matrix for deforming the 'zeroOneCubeModel' to exactly cover the environent probe volume in world space
 	idImage* 			irradianceImage;			// cubemap image used for diffuse IBL by backend
 	idImage* 			radianceImages[3];			// cubemap image used for specular IBL by backend
 	idVec4				radianceImageBlends;		// blending weights
+	idVec4				probePositions[3];			// only used by parallax correction
 
 	Framebuffer*		targetRender;				// SP: The framebuffer to render to
 
