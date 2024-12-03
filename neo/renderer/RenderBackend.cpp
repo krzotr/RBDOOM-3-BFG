@@ -422,21 +422,43 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 		// specular cubemap blend weights
 		renderProgManager.SetUniformValue( RENDERPARM_LOCALLIGHTORIGIN, viewDef->radianceImageBlends.ToFloatPtr() );
 
+		// allow reconstruction of depth buffer value to full view space position
+		SetVertexParms( RENDERPARM_SHADOW_MATRIX_0_X, viewDef->unprojectionToCameraRenderMatrix[0], 4 );
+
+		// we need to rotate the normals from world space to view space
+		idRenderMatrix viewMatrix;
+		idRenderMatrix::Transpose( *( idRenderMatrix* ) viewDef->worldSpace.modelViewMatrix, viewMatrix );
+		SetVertexParms( RENDERPARM_MODELVIEWMATRIX_X, viewMatrix[0], 4 );
+
 		// see if there is also a bump map specified
 		const shaderStage_t* bumpStage = surf->material->GetBumpStage();
 		if( bumpStage != NULL )
 		{
 			// per-pixel reflection mapping with bump mapping
 			GL_SelectTexture( 0 );
-			bumpStage->texture.image->Bind();
+			//bumpStage->texture.image->Bind();
+			globalImages->flatNormalMap->Bind();
 
 			GL_SelectTexture( 1 );
-			viewDef->radianceImages[0]->Bind();
+			globalImages->currentRenderImage->Bind();
 
 			GL_SelectTexture( 2 );
-			viewDef->radianceImages[1]->Bind();
+			if( r_useHierarchicalDepthBuffer.GetBool() )
+			{
+				globalImages->hierarchicalZbufferImage->Bind();
+			}
+			else
+			{
+				globalImages->currentDepthImage->Bind();
+			}
 
 			GL_SelectTexture( 3 );
+			viewDef->radianceImages[0]->Bind();
+
+			GL_SelectTexture( 4 );
+			viewDef->radianceImages[1]->Bind();
+
+			GL_SelectTexture( 5 );
 			viewDef->radianceImages[2]->Bind();
 
 			GL_SelectTexture( 0 );
@@ -5107,31 +5129,7 @@ void idRenderBackend::DrawScreenSpaceAmbientOcclusion( const viewDef_t* _viewDef
 	int screenWidth = renderSystem->GetWidth();
 	int screenHeight = renderSystem->GetHeight();
 
-	commandList->clearTextureFloat( globalImages->hierarchicalZbufferImage->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 1.f ) );
-	commandList->clearTextureFloat( globalImages->ambientOcclusionImage[0]->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 1.f ) );
-
-	// build hierarchical depth buffer
-	if( r_useHierarchicalDepthBuffer.GetBool() )
-	{
-		renderLog.OpenBlock( "Render_HiZ" );
-
-		//if( R_GetMSAASamples() > 1 )
-		//{
-		//	commandList->resolveTexture( globalImages->hierarchicalZbufferImage->GetTextureHandle(), nvrhi::AllSubresources, globalImages->currentDepthImage->GetTextureHandle(), nvrhi::AllSubresources );
-		//}
-		//else
-		{
-			commonPasses.BlitTexture(
-				commandList,
-				globalFramebuffers.csDepthFBO[0]->GetApiObject(),
-				globalImages->currentDepthImage->GetTextureHandle(),
-				&bindingCache );
-		}
-
-		hiZGenPass->Dispatch( commandList, MAX_HIERARCHICAL_ZBUFFERS );
-
-		renderLog.CloseBlock();
-	}
+	commandList->clearTextureFloat( globalImages->ambientOcclusionImage[0]->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 1.0f ) );
 
 	if( previousFramebuffer != NULL )
 	{
@@ -5681,6 +5679,26 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	FillDepthBufferFast( drawSurfs, numDrawSurfs );
 
 	//-------------------------------------------------
+	// build hierarchical depth buffer
+	//-------------------------------------------------
+	if( r_useHierarchicalDepthBuffer.GetBool() )
+	{
+		renderLog.OpenBlock( "Render_HiZ" );
+
+		commandList->clearTextureFloat( globalImages->hierarchicalZbufferImage->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 1.f ) );
+
+		commonPasses.BlitTexture(
+			commandList,
+			globalFramebuffers.csDepthFBO[0]->GetApiObject(),
+			globalImages->currentDepthImage->GetTextureHandle(),
+			&bindingCache );
+
+		hiZGenPass->Dispatch( commandList, MAX_HIERARCHICAL_ZBUFFERS );
+
+		renderLog.CloseBlock();
+	}
+
+	//-------------------------------------------------
 	// FIXME, OPTIMIZE: merge this with FillDepthBufferFast like in a light prepass deferred renderer
 	//
 	// fill the geometric buffer with normals and roughness
@@ -5727,8 +5745,34 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	DrawInteractions( _viewDef );
 
 	//-------------------------------------------------
+	// resolve the screen for SSR
+	//-------------------------------------------------
+	{
+		if( R_GetMSAASamples() > 1 )
+		{
+			renderLog.OpenBlock( "Resolve to _currentRender" );
+
+			commandList->resolveTexture( globalImages->currentRenderImage->GetTextureHandle(), nvrhi::AllSubresources, globalImages->currentRenderHDRImage->GetTextureHandle(), nvrhi::AllSubresources );
+		}
+		else
+		{
+			renderLog.OpenBlock( "Blit to _currentRender" );
+
+			BlitParameters blitParms;
+			nvrhi::IFramebuffer* currentFB = ( nvrhi::IFramebuffer* )currentFrameBuffer->GetApiObject();
+			blitParms.sourceTexture = currentFB->getDesc().colorAttachments[0].texture;
+			blitParms.targetFramebuffer = globalFramebuffers.postProcFBO->GetApiObject(); // _currentRender image
+			blitParms.targetViewport = nvrhi::Viewport( renderSystem->GetWidth(), renderSystem->GetHeight() );
+			commonPasses.BlitTexture( commandList, blitParms, &bindingCache );
+		}
+
+		renderLog.CloseBlock();
+	}
+
+	//-------------------------------------------------
 	// now draw any non-light dependent shading passes
 	//-------------------------------------------------
+
 	int processed = 0;
 	if( !r_skipShaderPasses.GetBool() )
 	{
@@ -6460,21 +6504,6 @@ void idRenderBackend::PostProcess( const void* data )
 		GL_SelectTexture( 3 );
 		if( r_useHierarchicalDepthBuffer.GetBool() )
 		{
-			// build hierarchical depth buffer
-			renderLog.OpenBlock( "Render_HiZ" );
-
-			commandList->clearTextureFloat( globalImages->hierarchicalZbufferImage->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 1.f ) );
-
-			commonPasses.BlitTexture(
-				commandList,
-				globalFramebuffers.csDepthFBO[0]->GetApiObject(),
-				globalImages->currentDepthImage->GetTextureHandle(),
-				&bindingCache );
-
-			hiZGenPass->Dispatch( commandList, MAX_HIERARCHICAL_ZBUFFERS );
-
-			renderLog.CloseBlock();
-
 			globalImages->hierarchicalZbufferImage->Bind();
 		}
 		else

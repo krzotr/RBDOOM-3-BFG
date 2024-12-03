@@ -371,9 +371,11 @@ void idRenderProgManager::Init( nvrhi::IDevice* device )
 	auto octahedronCubeBindingLayoutDesc = nvrhi::BindingLayoutDesc()
 										   .setVisibility( nvrhi::ShaderType::Pixel )
 										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 0 ) )	// normal map
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 1 ) )	// radiance cube map 1
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )	// radiance cube map 2
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 3 ) );	// radiance cube map 3
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 1 ) )	// HDR _currentRender
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )	// _currentDepth
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 3 ) )	// radiance cube map 1
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 4 ) )	// radiance cube map 2
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 5 ) );	// radiance cube map 3
 
 	auto octahedronCubeBindingLayout = device->createBindingLayout( octahedronCubeBindingLayoutDesc );
 
