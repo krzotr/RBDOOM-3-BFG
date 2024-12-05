@@ -50,6 +50,9 @@ struct PS_IN
 	float3 texcoord3	: TEXCOORD3_centroid;
 	float3 texcoord4	: TEXCOORD4_centroid;
 	float4 texcoord5	: TEXCOORD5_centroid;
+	float4 texcoord6	: TEXCOORD6_centroid;
+	float4 texcoord7	: TEXCOORD7_centroid;
+	float4 texcoord8	: TEXCOORD8_centroid;
 	float4 color		: COLOR0;
 };
 
@@ -60,8 +63,7 @@ struct PS_OUT
 // *INDENT-ON*
 
 
-#if 1
-float linearDepthTexelFetch( int2 hitPixel )
+float3 ReconstructPositionCS( int2 hitPixel )
 {
 	// Load returns 0 for any value accessed out of bounds
 	float depth = texelFetch( t_Depth, hitPixel, 0 ).r;
@@ -82,25 +84,26 @@ float linearDepthTexelFetch( int2 hitPixel )
 	csP.w = dot4( rpShadowMatrices[3], clip );
 
 	csP.xyz /= csP.w;
+	//csP.z = abs( csP.z );	// this is still negative Z like for OpenGL
 
-	return csP.z;
+	return csP.xyz;
 }
 
 
-float distanceSquared( float2 a, float2 b )
+float DistanceSquared( float2 a, float2 b )
 {
 	a -= b;
 	return dot( a, a );
 }
 
-void swap( inout float a, inout float b )
+void Swap( inout float a, inout float b )
 {
 	float t = a;
 	a = b;
 	b = t;
 }
 
-bool intersectsDepthBuffer( float z, float minZ, float maxZ, float zThickness )
+bool IntersectsDepthBuffer( float z, float minZ, float maxZ, float zThickness )
 {
 	/*
 	 * Based on how far away from the camera the depth is,
@@ -108,11 +111,20 @@ bool intersectsDepthBuffer( float z, float minZ, float maxZ, float zThickness )
 	 * artifacts. Driving this value up too high can cause
 	 * artifacts of its own.
 	 */
-	//float depthScale = min( 1.0f, z * cb_strideZCutoff );
-	//z += cb_zThickness + lerp( 0.0f, 2.0f, depthScale );
-	return ( maxZ >= z ) && ( minZ - zThickness <= z );
+	const float strideZCutoff = 100.0 * METERS_TO_DOOM;
+
+	//float depthScale = min( 1.0, z * strideZCutoff );
+	//z += zThickness + lerp( 0.0, 2.0, depthScale );
+
+	//return ( maxZ >= z ) && ( minZ - zThickness <= z );
+
+	//IntersectsDepthBuffer( sceneZMax, rayZMin, rayZMax, zThickness );
+
+	// RB: like original version with negative linear Z
+	return ( maxZ >= z - zThickness ) && ( minZ <= z );
 }
 
+// From the Efficient GPU Screen-Space Ray Tracing paper
 // By Morgan McGuire and Michael Mara at Williams College 2014
 // Released as open source under the BSD 2-Clause License
 // http://opensource.org/licenses/BSD-2-Clause
@@ -120,7 +132,7 @@ bool intersectsDepthBuffer( float z, float minZ, float maxZ, float zThickness )
 // Returns true if the ray hit something
 bool TraceScreenSpaceRay(
 	// Camera-space ray origin, which must be within the view volume
-	float3 rayOrigin,
+	float3 rayStart,
 
 	// Unit length camera-space ray direction
 	float3 rayDir,
@@ -129,7 +141,7 @@ bool TraceScreenSpaceRay(
 	float zThickness,
 
 	// Stride samples trades quality for performance
-	float stride,
+	float _stride,
 
 	// Number between 0 and 1 for how far to bump the ray in stride units
 	// to conceal banding artifacts. Not needed if stride == 1.
@@ -137,6 +149,9 @@ bool TraceScreenSpaceRay(
 
 	// Maximum number of iterations. Higher gives better images but may be slow
 	const float maxSteps,
+
+	// Maximum camera-space distance to trace before returning a miss
+	const float maxDistance,
 
 	// Pixel coordinates of the first intersection with the scene
 	out float2 hitPixel,
@@ -146,56 +161,46 @@ bool TraceScreenSpaceRay(
 
 	out float3 rayDebug )
 {
-	// Clip to the near plane
-	//float rayLength = ( ( csOrig.z + csDir.z * cb_maxDistance ) < cb_nearPlaneZ ) ?
-	//				  ( cb_nearPlaneZ - csOrig.z ) / csDir.z : cb_maxDistance;
+	const float nearPlaneZ = 3.0;
 
-	float rayLength = 10000;
-	float4 rayEndPoint = float4( rayOrigin + rayDir * rayLength, 1.0 );
+	// Clip to the near plane
+	float rayLength = ( ( rayStart.z + rayDir.z * maxDistance ) < nearPlaneZ ) ?
+					  ( nearPlaneZ - rayStart.z ) / rayDir.z : maxDistance;
+
+	//float rayLength = 10000;
+	float4 rayEnd = float4( rayStart + rayDir * rayLength, 1.0 );
 
 	// Project into homogeneous clip space
-	//float4 H0 = mul( float4( csOrig, 1.0f ), viewToTextureSpaceMatrix );
-
-	float4 ray4D = float4( rayOrigin, 1.0 );
+	float4 ray4D = float4( rayStart, 1.0 );
 	float4 H0;
-	H0.x = dot4( ray4D, rpProjectionMatrixX );
-	H0.y = dot4( ray4D, rpProjectionMatrixY );
-	H0.z = dot4( ray4D, rpProjectionMatrixZ );
-	H0.w = dot4( ray4D, rpProjectionMatrixW );
-	//H0.xy *= rpWindowCoord.zw;
+	H0.x = dot4( ray4D, rpShadowMatrices[4] );
+	H0.y = dot4( ray4D, rpShadowMatrices[5] );
+	H0.z = dot4( ray4D, rpShadowMatrices[6] );
+	H0.w = dot4( ray4D, rpShadowMatrices[7] );
 
-	//float4 H1 = mul( float4( csEndPoint, 1.0f ), viewToTextureSpaceMatrix );
 	float4 H1;
-	H1.x = dot4( rayEndPoint, rpProjectionMatrixX );
-	H1.y = dot4( rayEndPoint, rpProjectionMatrixY );
-	H1.z = dot4( rayEndPoint, rpProjectionMatrixZ );
-	H1.w = dot4( rayEndPoint, rpProjectionMatrixW );
-	//H1.xy *= rpWindowCoord.zw;
+	H1.x = dot4( rayEnd, rpShadowMatrices[4] );
+	H1.y = dot4( rayEnd, rpShadowMatrices[5] );
+	H1.z = dot4( rayEnd, rpShadowMatrices[6] );
+	H1.w = dot4( rayEnd, rpShadowMatrices[7] );
 
 	float k0 = 1.0f / H0.w;
 	float k1 = 1.0f / H1.w;
 
-	// The interpolated homogeneous version of the camera-space points
-	float3 Q0 = rayOrigin * k0;
-	float3 Q1 = rayEndPoint.xyz * k1;
+	// Switch the original points to values that interpolate linearly in 2D
+	float3 Q0 = rayStart * k0;
+	float3 Q1 = rayEnd.xyz * k1;
 
 	// Screen-space endpoints
 	float2 P0 = H0.xy * k0;
 	float2 P1 = H1.xy * k1;
 
-#if 0
-	rayDebug.xy = H0.xy;
-	//rayDebug.xy = rayOrigin.xy * rpWindowCoord.xy;
-	//rayDebug.y = 0;
-	rayDebug.z = 0;
-
-	//rayDebug = rayDir.xyz * 0.5 + 0.5;
-	return false;
-#endif
+	// Initialize to off screen
+	hitPixel = float2( -1.0, -1.0 );
 
 	// If the line is degenerate, make it cover at least one pixel
 	// to avoid handling zero-pixel extent as a special case later
-	P1 += ( distanceSquared( P0, P1 ) < 0.0001 ) ? float2( 0.01, 0.01 ) : 0.0;
+	P1 += ( DistanceSquared( P0, P1 ) < 0.0001 ) ? float2( 0.01, 0.01 ) : 0.0;
 	float2 delta = P1 - P0;
 
 	// Permute so that the primary iteration is in x to collapse
@@ -210,18 +215,22 @@ bool TraceScreenSpaceRay(
 		P1 = P1.yx;
 	}
 
+	// From now on, "x" is the primary iteration direction and "y" is the secondary one
 	float stepDir = sign( delta.x );
 	float invdx = stepDir / delta.x;
+	float2 dP = float2( stepDir, delta.y * invdx );
 
 	// Track the derivatives of Q and k
 	float3 dQ = ( Q1 - Q0 ) * invdx;
 	float dk = ( k1 - k0 ) * invdx;
-	float2 dP = float2( stepDir, delta.y * invdx );
+
+	const float strideZCutoff = 100.0 * METERS_TO_DOOM;
 
 	// Scale derivatives by the desired pixel stride and then
 	// offset the starting values by the jitter fraction
-	//float strideScale = 1.0f - min( 1.0f, csOrig.z * cb_strideZCutoff );
-	//float stride = 1.0f + strideScale * cb_stride;
+	//float strideScale = 1.0f - min( 1.0f, rayStart.z * strideZCutoff );
+	//float stride = 1.0f + strideScale * _stride;
+	float stride = _stride;
 	dP *= stride;
 	dQ *= stride;
 	dk *= stride;
@@ -231,28 +240,36 @@ bool TraceScreenSpaceRay(
 	k0 += dk * jitter;
 
 	// Slide P from P0 to P1, (now-homogeneous) Q from Q0 to Q1, k from k0 to k1
-	float4 PQk = float4( P0.xy, Q0.z, k0 );
-	float4 dPQk = float4( dP.xy, dQ.z, dk );
 	float3 Q = Q0;
+	float  k = k0;
 
-	// Adjust end condition for iteration direction
-	float end = P1.x * stepDir;
-
+	// We track the ray depth at +/- 1/2 pixel to treat pixels as clip-space solid
+	// voxels. Because the depth at -1/2 for a given pixel will be the same as at
+	// +1/2 for the previous iteration, we actually only have to compute one value
+	// per iteration.
 	float stepCount = 0.0;
-	float prevZMaxEstimate = rayOrigin.z;
+	float prevZMaxEstimate = rayStart.z;
 	float rayZMin = prevZMaxEstimate;
 	float rayZMax = prevZMaxEstimate;
-	float sceneZMax = rayZMax + 1000.0;
+	float sceneZMax = rayZMax + 1.0 * METERS_TO_DOOM;
+
+	// P1.x is never modified after this point, so pre-scale it by
+	// the step direction for a signed comparison
+	float end = P1.x * stepDir;
 
 	// We only advance the z field of Q in the inner loop, since
 	// Q.xy is never used until after the loop terminates.
-	for( ;
-			( ( PQk.x * stepDir ) <= end ) && ( stepCount < maxSteps ) &&
-			!intersectsDepthBuffer( sceneZMax, rayZMin, rayZMax, zThickness ) &&
+
+	for( float2 P = P0;
+			( ( P.x * stepDir ) <= end ) &&
+			( stepCount < maxSteps ) &&
+			//!IntersectsDepthBuffer( sceneZMax, rayZMin, rayZMax, zThickness ) &&
 			( ( rayZMax < sceneZMax - zThickness ) || ( rayZMin > sceneZMax ) ) &&
 			( sceneZMax != 0.0f );
-			stepCount += 1.0 )
+			P += dP, Q.z += dQ.z, k += dk, stepCount += 1.0 )
 	{
+		hitPixel = permute ? P.yx : P;
+
 		// The depth range that the ray covers within this loop
 		// iteration.  Assume that the ray is moving in increasing z
 		// and swap if backwards.  Because one end of the interval is
@@ -261,32 +278,30 @@ bool TraceScreenSpaceRay(
 		rayZMin = prevZMaxEstimate;
 
 		// Compute the value at 1/2 pixel into the future
-		rayZMax = ( dPQk.z * 0.5f + PQk.z ) / ( dPQk.w * 0.5f + PQk.w );
+		rayZMax = ( dQ.z * 0.5 + Q.z ) / ( dk * 0.5 + k );
 		prevZMaxEstimate = rayZMax;
+
 		if( rayZMin > rayZMax )
 		{
-			swap( rayZMin, rayZMax );
+			Swap( rayZMin, rayZMax );
 		}
-
-		hitPixel = permute ? PQk.yx : PQk.xy;
-
-		//rayDebug.xy = hitPixel;
 
 		// You may need hitPixel.y = depthBufferSize.y - hitPixel.y; here if your vertical axis
 		// is different than ours in screen space
-		sceneZMax = linearDepthTexelFetch( hitPixel );
+		//hitPixel.x = rpWindowCoord.z - hitPixel.x;
+		//hitPixel.y = rpWindowCoord.w - hitPixel.y;
 
-		PQk += dPQk;
+		sceneZMax = ReconstructPositionCS( hitPixel ).z;
 	}
 
 	// Advance Q based on the number of steps
 	Q.xy += dQ.xy * stepCount;
-	hitPoint = Q * ( 1.0f / PQk.w );
+	hitPoint = Q * ( 1.0f / k );
 
-	return intersectsDepthBuffer( sceneZMax, rayZMin, rayZMax, zThickness );
-	//return false;
+	//rayDebug.xyz = _float3( stepCount );
+
+	return IntersectsDepthBuffer( sceneZMax, rayZMin, rayZMax, zThickness );
 }
-#endif
 
 
 float2 GetSampleVector( float3 reflectionVector )
@@ -313,15 +328,9 @@ void main( PS_IN fragment, out PS_OUT result )
 
 	float3 globalNormal;
 
-#if 1
 	globalNormal.x = dot3( localNormal, fragment.texcoord2 );
 	globalNormal.y = dot3( localNormal, fragment.texcoord3 );
 	globalNormal.z = dot3( localNormal, fragment.texcoord4 );
-#else
-	globalNormal = fragment.texcoord2.z;
-	globalNormal = fragment.texcoord3.z;
-	globalNormal = fragment.texcoord4.z;
-#endif
 
 	float3 globalPosition = fragment.texcoord5.xyz;
 
@@ -334,7 +343,9 @@ void main( PS_IN fragment, out PS_OUT result )
 	float2 octCoord1 = octCoord0;
 	float2 octCoord2 = octCoord0;
 
-#if 0
+	float3 rayStart = globalPosition;
+
+#if 1
 	// parallax box correction using portal area bounds
 	float hitScale = 0.0;
 	float3 bounds[2];
@@ -345,9 +356,6 @@ void main( PS_IN fragment, out PS_OUT result )
 	bounds[1].x = rpWobbleSkyY.x;
 	bounds[1].y = rpWobbleSkyY.y;
 	bounds[1].z = rpWobbleSkyY.z;
-
-	// global fragment position
-	float3 rayStart = globalPosition;
 
 	// we can't start inside the box so move this outside and use the reverse path
 	rayStart += reflectionVector * 10000.0;
@@ -376,50 +384,92 @@ void main( PS_IN fragment, out PS_OUT result )
 	radiance += t_RadianceCubeMap3.SampleLevel( s_LinearClamp, octCoord2, mip ).rgb * rpLocalLightOrigin.z;
 
 #if 1
-	// both in camera space
-	float3 rayOrigin, rayDir;
+	// Screen Space Reflections
 
-	//rayOrigin.xy = fragment.position.xy * rpWindowCoord.xy;
-	rayOrigin.x = dot3( globalPosition, rpModelViewMatrixX );
-	rayOrigin.y = dot3( globalPosition, rpModelViewMatrixY );
-	rayOrigin.z = dot3( globalPosition, rpModelViewMatrixZ );
+	float3 rayDir;
 
-	rayDir.x = dot3( reflectionVector, rpModelViewMatrixX );
-	rayDir.y = dot3( reflectionVector, rpModelViewMatrixY );
-	rayDir.z = dot3( reflectionVector, rpModelViewMatrixZ );
+	float3 viewNormal;
+	viewNormal.x = dot3( localNormal, fragment.texcoord6 );
+	viewNormal.y = dot3( localNormal, fragment.texcoord7 );
+	viewNormal.z = dot3( localNormal, fragment.texcoord8 );
+	viewNormal = normalize( viewNormal );
 
-	//rayDir = normalize( globalNormal );
+	rayStart = ReconstructPositionCS( fragment.position.xy );
 
+	float3 V;
+	V = normalize( rayStart );
+	reflectionVector = reflect( V, viewNormal );
+	rayDir = normalize( reflectionVector );
+
+	// use forward vector instead of V to avoid bending
+	float vDotR = ( dot3( float3( 0, 0, 1 ), reflectionVector ) );
+
+	const float maxSteps = rpJitterTexScale.x;
 
 	float2 hitPixel;
 	float3 hitPoint;
 	float3 rayDebug = float3( 0, 0, 1 );
-	bool intersect = TraceScreenSpaceRay(
-						 rayOrigin,
-						 rayDir,
-						 0.001,
-						 1,
-						 0,
-						 100,
-						 hitPixel,
-						 hitPoint,
-						 rayDebug );
+	bool intersection = false;
 
-#if 0
-	result.color.rgba = float4( rayDir.xyz * 0.5 + 0.5, 1 );
-	return;
-#endif
+	float jitter = 1.0;
+	//jitter = ( int( fragment.position.x + fragment.position.y) & 1 ) * 0.5; // like in the paper but sucks
+	jitter = InterleavedGradientNoise( fragment.position.xy );
+	//jitter = InterleavedGradientNoiseAnim( fragment.position.xy, rpJitterTexOffset.w );
 
-	if( intersect )
+	jitter = lerp( 1.0, jitter, rpGlobalLightOrigin.w );
+
+	// using the same jitter on probe fallback to make it seamless
+	// looks kinda bad because on close ups you don't want to see the noise
+	//radiance *= jitter;
+
+	if( vDotR <= 0 )
+	{
+		intersection = TraceScreenSpaceRay(
+						   rayStart,
+						   rayDir,
+						   rpGlobalLightOrigin.z,	// zThickness 0.5
+						   rpGlobalLightOrigin.x,	// stride
+						   jitter,					// jitter
+						   maxSteps,				// max steps
+						   rpGlobalLightOrigin.y * METERS_TO_DOOM,	// max Distance
+						   hitPixel,
+						   hitPoint,
+						   rayDebug );
+	}
+
+	float2 delta = ( hitPixel * rpWindowCoord.xy ) - ( fragment.position.xy * rpWindowCoord.xy );
+	float deltaLen = length( delta );
+
+	if( ( hitPixel.x > rpWindowCoord.z || hitPixel.x < 0.0 || hitPixel.y > rpWindowCoord.w || hitPixel.y < 0.0 ) )
+	{
+		intersection = false;
+	}
+
+	if( intersection )
 	{
 		radiance = float3( 0, 1, 0 );
 		radiance = t_Color.Sample( s_LinearClamp, hitPixel * rpWindowCoord.xy ).rgb;
+
+		//radiance = float3( delta, 0 );
+		//radiance = float3( 0, deltaLen, 0 );
+		//radiance = rayDebug / maxSteps;
+
+		//radiance = float3( hitPixel * rpWindowCoord.xy, 0 );
 	}
 	else
 	{
-		//radiance = linearDepthTexelFetch( fragment.position.xy );// / 16000;
-		//radiance = float3( 0, 0, 1 );
-		radiance = rayDebug;
+		/*
+		if( vDotR > 0.0 )
+		{
+			radiance = float3( 1, 0, 0 );
+		}
+		else
+		{
+			radiance = float3( 0, 0, 1 );
+		}
+		*/
+		//radiance = rayDebug;
+		//discard;
 	}
 #endif
 
@@ -429,5 +479,5 @@ void main( PS_IN fragment, out PS_OUT result )
 	// make this really dark although it is already in linear RGB
 	radiance = sRGBToLinearRGB( radiance.xyz );
 
-	result.color = float4( radiance, 1.0f ) * fragment.color;
+	result.color = float4( radiance, 1.0 ) * fragment.color;
 }

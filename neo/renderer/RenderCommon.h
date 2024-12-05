@@ -1267,6 +1267,13 @@ extern idCVar r_useLightGrid;
 
 extern idCVar r_exposure;
 
+extern idCVar r_useSSR;
+extern idCVar r_ssrJitter;
+extern idCVar r_ssrMaxDistance;
+extern idCVar r_ssrMaxSteps;
+extern idCVar r_ssrStride;
+extern idCVar r_ssrZThickness;
+
 extern idCVar r_useTemporalAA;
 extern idCVar r_taaJitter;
 extern idCVar r_taaEnableHistoryClamping;
