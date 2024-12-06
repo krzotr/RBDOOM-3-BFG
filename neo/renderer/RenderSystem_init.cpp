@@ -362,6 +362,12 @@ bool R_UseTemporalAA()
 	}
 }
 
+bool R_UseHiZ()
+{
+	// TODO check for driver problems here
+	return r_useHierarchicalDepthBuffer.GetBool();
+}
+
 uint R_GetMSAASamples()
 {
 #if ID_MSAA

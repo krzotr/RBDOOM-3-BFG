@@ -396,7 +396,7 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 	}
 	else if( pStage->texture.texgen == TG_REFLECT_CUBE2 )
 	{
-		if( r_useSSR.GetBool() )
+		if( r_useSSR.GetBool() && R_UseHiZ() )
 		{
 			idVec4 probeMins, probeMaxs, probeCenter;
 
@@ -493,15 +493,8 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 				globalImages->gbufferNormalsRoughnessImage->Bind();
 
 				GL_SelectTexture( 3 );
-				if( r_useHierarchicalDepthBuffer.GetBool() )
-				{
-					// use hierachical Z to avoid read & write at the same time on the depth buffer
-					globalImages->hierarchicalZbufferImage->Bind();
-				}
-				else
-				{
-					globalImages->currentDepthImage->Bind();
-				}
+				// use hierachical Z to avoid read & write at the same time on the depth buffer
+				globalImages->hierarchicalZbufferImage->Bind();
 
 				GL_SelectTexture( 4 );
 				viewDef->radianceImages[0]->Bind();
@@ -5271,7 +5264,7 @@ void idRenderBackend::DrawScreenSpaceAmbientOcclusion( const viewDef_t* _viewDef
 	globalImages->gbufferNormalsRoughnessImage->Bind();
 
 	GL_SelectTexture( 1 );
-	if( r_useHierarchicalDepthBuffer.GetBool() )
+	if( R_UseHiZ() )
 	{
 		globalImages->hierarchicalZbufferImage->Bind();
 	}
@@ -5730,7 +5723,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	//-------------------------------------------------
 	// build hierarchical depth buffer
 	//-------------------------------------------------
-	if( r_useHierarchicalDepthBuffer.GetBool() && is3D )
+	if( R_UseHiZ() && is3D )
 	{
 		renderLog.OpenBlock( "Render_HiZ" );
 
@@ -6551,7 +6544,7 @@ void idRenderBackend::PostProcess( const void* data )
 		globalImages->gbufferNormalsRoughnessImage->Bind();
 
 		GL_SelectTexture( 3 );
-		if( r_useHierarchicalDepthBuffer.GetBool() )
+		if( R_UseHiZ() )
 		{
 			globalImages->hierarchicalZbufferImage->Bind();
 		}

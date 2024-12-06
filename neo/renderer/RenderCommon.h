@@ -1326,6 +1326,8 @@ bool R_UsePixelatedLook();
 
 bool R_UseTemporalAA();
 
+bool R_UseHiZ();
+
 uint R_GetMSAASamples();
 
 void R_SetNewMode( const bool fullInit );
