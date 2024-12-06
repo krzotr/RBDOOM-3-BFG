@@ -1834,7 +1834,8 @@ void idRenderBackend::GetCurrentBindingLayout( int type )
 				nvrhi::BindingSetItem::Texture_SRV( 2, ( nvrhi::ITexture* )GetImageAt( 2 )->GetTextureID() ),
 				nvrhi::BindingSetItem::Texture_SRV( 3, ( nvrhi::ITexture* )GetImageAt( 3 )->GetTextureID() ),
 				nvrhi::BindingSetItem::Texture_SRV( 4, ( nvrhi::ITexture* )GetImageAt( 4 )->GetTextureID() ),
-				nvrhi::BindingSetItem::Texture_SRV( 5, ( nvrhi::ITexture* )GetImageAt( 5 )->GetTextureID() )
+				nvrhi::BindingSetItem::Texture_SRV( 5, ( nvrhi::ITexture* )GetImageAt( 5 )->GetTextureID() ),
+				nvrhi::BindingSetItem::Texture_SRV( 6, ( nvrhi::ITexture* )GetImageAt( 6 )->GetTextureID() )
 			};
 		}
 		else
@@ -1846,6 +1847,7 @@ void idRenderBackend::GetCurrentBindingLayout( int type )
 			bindings[3].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 3 )->GetTextureID();
 			bindings[4].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 4 )->GetTextureID();
 			bindings[5].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 5 )->GetTextureID();
+			bindings[6].resourceHandle = ( nvrhi::ITexture* )GetImageAt( 6 )->GetTextureID();
 		}
 
 		if( R_UsePixelatedLook() )

@@ -490,22 +490,26 @@ void idRenderBackend::PrepareStageTexturing( const shaderStage_t* pStage,  const
 				globalImages->currentRenderImage->Bind();
 
 				GL_SelectTexture( 2 );
-				//if( r_useHierarchicalDepthBuffer.GetBool() )
-				//{
-				//	globalImages->hierarchicalZbufferImage->Bind();
-				//}
-				//else
+				globalImages->gbufferNormalsRoughnessImage->Bind();
+
+				GL_SelectTexture( 3 );
+				if( r_useHierarchicalDepthBuffer.GetBool() )
+				{
+					// use hierachical Z to avoid read & write at the same time on the depth buffer
+					globalImages->hierarchicalZbufferImage->Bind();
+				}
+				else
 				{
 					globalImages->currentDepthImage->Bind();
 				}
 
-				GL_SelectTexture( 3 );
+				GL_SelectTexture( 4 );
 				viewDef->radianceImages[0]->Bind();
 
-				GL_SelectTexture( 4 );
+				GL_SelectTexture( 5 );
 				viewDef->radianceImages[1]->Bind();
 
-				GL_SelectTexture( 5 );
+				GL_SelectTexture( 6 );
 				viewDef->radianceImages[2]->Bind();
 
 				GL_SelectTexture( 0 );
@@ -2207,13 +2211,13 @@ void idRenderBackend::AmbientPass( const drawSurf_t* const* drawSurfs, int numDr
 
 	if( fillGbuffer )
 	{
-		commandList->clearTextureFloat( globalImages->gbufferNormalsRoughnessImage->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 0.f ) );
+		commandList->clearTextureFloat( globalImages->gbufferNormalsRoughnessImage->GetTextureHandle(), nvrhi::AllSubresources, nvrhi::Color( 0.0f ) );
 	}
 
 	// RB: TODO remove this
 	if( !fillGbuffer && r_useSSAO.GetBool() && r_ssaoDebug.GetBool() )
 	{
-		GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_DEPTHMASK | GLS_DEPTHFUNC_ALWAYS );
+		GL_State( GLS_DEPTHMASK | GLS_DEPTHFUNC_ALWAYS | GLS_CULL_TWOSIDED );
 
 		// We just want to do a quad pass - so make sure we disable any texgen and
 		// set the texture matrix to the identity so we don't get anomalies from
@@ -5549,8 +5553,10 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	OPTICK_GPU_CONTEXT( ( void* ) commandList->getNativeObject( commandObject ) );
 	//OPTICK_GPU_EVENT( "DrawView" );	// SRS - now in DrawView() for 3D vs. GUI
 
+	bool is3D = _viewDef->viewEntitys && !_viewDef->is2Dgui;
+
 	// ugly but still faster than building the string
-	if( !_viewDef->viewEntitys || _viewDef->is2Dgui )
+	if( !is3D )
 	{
 		if( stereoEye == -1 )
 		{
@@ -5619,7 +5625,6 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	// ensures that depth writes are enabled for the depth clear
 	GL_State( GLS_DEFAULT | GLS_CULL_FRONTSIDED, true );
 
-	bool useHDR = !_viewDef->is2Dgui;
 	bool clearColor = false;
 
 	if( _viewDef->renderView.rdflags & RDF_IRRADIANCE )
@@ -5627,7 +5632,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 		globalFramebuffers.envprobeFBO->Bind();
 		clearColor = true;
 	}
-	else if( useHDR )
+	else if( is3D )
 	{
 		globalFramebuffers.hdrFBO->Bind();
 	}
@@ -5725,7 +5730,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	//-------------------------------------------------
 	// build hierarchical depth buffer
 	//-------------------------------------------------
-	if( r_useHierarchicalDepthBuffer.GetBool() )
+	if( r_useHierarchicalDepthBuffer.GetBool() && is3D )
 	{
 		renderLog.OpenBlock( "Render_HiZ" );
 
@@ -5747,7 +5752,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	//
 	// fill the geometric buffer with normals and roughness
 	//-------------------------------------------------
-	if( viewDef->viewEntitys )		// 3D views only
+	if( is3D )
 	{
 		//OPTICK_EVENT( "Render_GeometryBuffer" );
 		OPTICK_GPU_EVENT( "Render_GeometryBuffer" );
@@ -5770,7 +5775,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	//-------------------------------------------------
 	// render static lighting and consider SSAO results
 	//-------------------------------------------------
-	if( viewDef->viewEntitys )		// 3D views only
+	if( is3D )
 	{
 		//OPTICK_EVENT( "Render_AmbientPass" );
 		OPTICK_GPU_EVENT( "Render_AmbientPass" );
@@ -5932,7 +5937,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	// tonemapping: convert back from HDR to LDR range
 	//-------------------------------------------------
 
-	if( useHDR && !( _viewDef->renderView.rdflags & RDF_IRRADIANCE ) && !_viewDef->targetRender )
+	if( is3D && !( _viewDef->renderView.rdflags & RDF_IRRADIANCE ) && !_viewDef->targetRender )
 	{
 		OPTICK_GPU_EVENT( "Render_ToneMapPass" );
 

@@ -32,11 +32,12 @@ If you have questions concerning this license or the applicable additional terms
 
 // *INDENT-OFF*
 Texture2D t_NormalMap			: register( t0 VK_DESCRIPTOR_SET( 1 ) );
-Texture2D t_Color				: register( t1 VK_DESCRIPTOR_SET( 1 ) );
-Texture2D t_Depth				: register( t2 VK_DESCRIPTOR_SET( 1 ) );
-Texture2D t_RadianceCubeMap1	: register( t3 VK_DESCRIPTOR_SET( 1 ) );
-Texture2D t_RadianceCubeMap2	: register( t4 VK_DESCRIPTOR_SET( 1 ) );
-Texture2D t_RadianceCubeMap3	: register( t5 VK_DESCRIPTOR_SET( 1 ) );
+Texture2D t_ScreenColor			: register( t1 VK_DESCRIPTOR_SET( 1 ) );
+Texture2D t_ScreenNormals		: register( t2 VK_DESCRIPTOR_SET( 1 ) );
+Texture2D t_Depth				: register( t3 VK_DESCRIPTOR_SET( 1 ) );
+Texture2D t_RadianceCubeMap1	: register( t4 VK_DESCRIPTOR_SET( 1 ) );
+Texture2D t_RadianceCubeMap2	: register( t5 VK_DESCRIPTOR_SET( 1 ) );
+Texture2D t_RadianceCubeMap3	: register( t6 VK_DESCRIPTOR_SET( 1 ) );
 
 SamplerState s_Material			: register( s0 VK_DESCRIPTOR_SET( 2 ) );
 SamplerState s_LinearClamp		: register( s1 VK_DESCRIPTOR_SET( 2 ) );
@@ -50,9 +51,6 @@ struct PS_IN
 	float3 texcoord3	: TEXCOORD3_centroid;
 	float3 texcoord4	: TEXCOORD4_centroid;
 	float4 texcoord5	: TEXCOORD5_centroid;
-	float4 texcoord6	: TEXCOORD6_centroid;
-	float4 texcoord7	: TEXCOORD7_centroid;
-	float4 texcoord8	: TEXCOORD8_centroid;
 	float4 color		: COLOR0;
 };
 
@@ -118,9 +116,7 @@ bool IntersectsDepthBuffer( float z, float minZ, float maxZ, float zThickness )
 
 	//return ( maxZ >= z ) && ( minZ - zThickness <= z );
 
-	//IntersectsDepthBuffer( sceneZMax, rayZMin, rayZMax, zThickness );
-
-	// RB: like original version with negative linear Z
+	// like original version with negative linear Z
 	return ( maxZ >= z - zThickness ) && ( minZ <= z );
 }
 
@@ -332,6 +328,17 @@ void main( PS_IN fragment, out PS_OUT result )
 	globalNormal.y = dot3( localNormal, fragment.texcoord3 );
 	globalNormal.z = dot3( localNormal, fragment.texcoord4 );
 
+	float3 screenNormalWS = ( ( 2.0 * t_ScreenNormals.Sample( s_LinearClamp, fragment.position.xy * rpWindowCoord.xy ).rgb ) - 1.0 );
+
+	// https://blog.selfshadow.com/publications/blending-in-detail/
+
+	// UDN blending
+	//globalNormal = normalize( float3( screenNormalWS.xy + globalNormal.xy, screenNormalWS.z ) );
+
+	// Whiteout blending
+	globalNormal = normalize( float3( screenNormalWS.xy + globalNormal.xy, screenNormalWS.z * globalNormal.z ) );
+
+
 	float3 globalPosition = fragment.texcoord5.xyz;
 
 	float3 globalView = normalize( globalPosition - rpGlobalEyePos.xyz );
@@ -389,10 +396,11 @@ void main( PS_IN fragment, out PS_OUT result )
 	float3 rayDir;
 
 	float3 viewNormal;
-	viewNormal.x = dot3( localNormal, fragment.texcoord6 );
-	viewNormal.y = dot3( localNormal, fragment.texcoord7 );
-	viewNormal.z = dot3( localNormal, fragment.texcoord8 );
-	viewNormal = normalize( viewNormal );
+
+	// TODO this should be rpViewMatrixX
+	viewNormal.x = dot3( rpModelViewMatrixX, globalNormal );
+	viewNormal.y = dot3( rpModelViewMatrixY, globalNormal );
+	viewNormal.z = dot3( rpModelViewMatrixZ, globalNormal );
 
 	rayStart = ReconstructPositionCS( fragment.position.xy );
 
@@ -448,7 +456,7 @@ void main( PS_IN fragment, out PS_OUT result )
 	if( intersection )
 	{
 		radiance = float3( 0, 1, 0 );
-		radiance = t_Color.Sample( s_LinearClamp, hitPixel * rpWindowCoord.xy ).rgb;
+		radiance = t_ScreenColor.Sample( s_LinearClamp, hitPixel * rpWindowCoord.xy ).rgb;
 
 		//radiance = float3( delta, 0 );
 		//radiance = float3( 0, deltaLen, 0 );

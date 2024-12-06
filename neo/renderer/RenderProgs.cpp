@@ -3,7 +3,7 @@
 
 Doom 3 BFG Edition GPL Source Code
 Copyright (C) 1993-2012 id Software LLC, a ZeniMax Media company.
-Copyright (C) 2013-2023 Robert Beckebans
+Copyright (C) 2013-2024 Robert Beckebans
 Copyright (C) 2022 Stephen Pridham
 
 This file is part of the Doom 3 BFG Edition GPL Source Code ("Doom 3 BFG Edition Source Code").
@@ -372,10 +372,11 @@ void idRenderProgManager::Init( nvrhi::IDevice* device )
 										   .setVisibility( nvrhi::ShaderType::Pixel )
 										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 0 ) )	// normal map
 										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 1 ) )	// HDR _currentRender
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )	// _currentDepth
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 3 ) )	// radiance cube map 1
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 4 ) )	// radiance cube map 2
-										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 5 ) );	// radiance cube map 3
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )	// _currentNormals
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 3 ) )	// _currentDepth
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 4 ) )	// radiance cube map 1
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 5 ) )	// radiance cube map 2
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 6 ) );	// radiance cube map 3
 
 	auto octahedronCubeBindingLayout = device->createBindingLayout( octahedronCubeBindingLayoutDesc );
 

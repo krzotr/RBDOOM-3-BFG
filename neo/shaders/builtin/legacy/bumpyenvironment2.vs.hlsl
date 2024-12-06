@@ -53,9 +53,6 @@ struct VS_OUT
 	float3 texcoord3	: TEXCOORD3_centroid;
 	float3 texcoord4	: TEXCOORD4_centroid;
 	float4 texcoord5	: TEXCOORD5_centroid;
-	float4 texcoord6	: TEXCOORD6_centroid;
-	float4 texcoord7	: TEXCOORD7_centroid;
-	float4 texcoord8	: TEXCOORD8_centroid;
 	float4 color		: COLOR0;
 };
 // *INDENT-ON*
@@ -158,7 +155,7 @@ void main( VS_IN vertex, out VS_OUT result )
 	result.texcoord1.y = dot3( toEye, rpModelMatrixY );
 	result.texcoord1.z = dot3( toEye, rpModelMatrixZ );
 
-	// rotate into world space
+	// rotate from tangent space into world space
 	result.texcoord2.x = dot3( tangent, rpModelMatrixX );
 	result.texcoord3.x = dot3( tangent, rpModelMatrixY );
 	result.texcoord4.x = dot3( tangent, rpModelMatrixZ );
@@ -177,19 +174,6 @@ void main( VS_IN vertex, out VS_OUT result )
 	worldPosition.z = dot4( modelPosition, rpModelMatrixZ );
 	worldPosition.w = dot4( modelPosition, rpModelMatrixW );
 	result.texcoord5 = worldPosition;
-
-	// rotate into view space
-	result.texcoord6.x = dot3( tangent, rpModelViewMatrixX );
-	result.texcoord7.x = dot3( tangent, rpModelViewMatrixY );
-	result.texcoord8.x = dot3( tangent, rpModelViewMatrixZ );
-
-	result.texcoord6.y = dot3( bitangent, rpModelViewMatrixX );
-	result.texcoord7.y = dot3( bitangent, rpModelViewMatrixY );
-	result.texcoord8.y = dot3( bitangent, rpModelViewMatrixZ );
-
-	result.texcoord6.z = dot3( normal, rpModelViewMatrixX );
-	result.texcoord7.z = dot3( normal, rpModelViewMatrixY );
-	result.texcoord8.z = dot3( normal, rpModelViewMatrixZ );
 
 	result.color = rpColor;
 }
