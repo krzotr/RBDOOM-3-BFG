@@ -19,6 +19,30 @@ TBD - RBDOOM-3-BFG 1.6.0
 _______________________________
 
 
+## .plan - November 27, 2024
+
+Another test build.
+
+Changelog:
+
+* Added new PBR roughness and specular color estimation by Kennedith98
+
+* Tuned r_lightScale influence for PBR so specular is less dominant
+
+* Added back SMAA so r_antiAliasing 1 = SMAA, 2 = TAA
+
+* Fixed TAA problems with 3D guis and transparent decals
+
+* Killed 3DTV render code. It's either VR or flat.
+
+* MOC now renders only at the half resolution for better perf
+
+* Improved interpolation between env_probes, especially when they are parallel placed
+
+* Updated NVRHI with Nvidia's latest patches
+
+
+
 ## .plan - September 06, 2024
 
 This is a test build for the Masked Software Occlusion Culling (MOC) implementation. Many modern engines have a solution like Umbra integrated that automatically hides hidden objects in the renderer before they even get rendered to optimize the performance.

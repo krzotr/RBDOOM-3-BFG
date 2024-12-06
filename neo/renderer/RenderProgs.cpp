@@ -3,7 +3,7 @@
 
 Doom 3 BFG Edition GPL Source Code
 Copyright (C) 1993-2012 id Software LLC, a ZeniMax Media company.
-Copyright (C) 2013-2023 Robert Beckebans
+Copyright (C) 2013-2024 Robert Beckebans
 Copyright (C) 2022 Stephen Pridham
 
 This file is part of the Doom 3 BFG Edition GPL Source Code ("Doom 3 BFG Edition Source Code").
@@ -368,6 +368,27 @@ void idRenderProgManager::Init( nvrhi::IDevice* device )
 		skinningLayout, normalCubeBindingLayout, samplerOneBindingLayout
 	};
 
+	auto octahedronCubeBindingLayoutDesc = nvrhi::BindingLayoutDesc()
+										   .setVisibility( nvrhi::ShaderType::Pixel )
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 0 ) )	// normal map
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 1 ) )	// HDR _currentRender
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )	// _currentNormals
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 3 ) )	// _currentDepth
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 4 ) )	// radiance cube map 1
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 5 ) )	// radiance cube map 2
+										   .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 6 ) );	// radiance cube map 3
+
+	auto octahedronCubeBindingLayout = device->createBindingLayout( octahedronCubeBindingLayoutDesc );
+
+	bindingLayouts[BINDING_LAYOUT_OCTAHEDRON_CUBE] =
+	{
+		uniformsLayout,  octahedronCubeBindingLayout, samplerTwoBindingLayout
+	};
+	bindingLayouts[BINDING_LAYOUT_OCTAHEDRON_CUBE_SKINNED] =
+	{
+		skinningLayout,  octahedronCubeBindingLayout, samplerTwoBindingLayout
+	};
+
 	auto binkVideoBindingLayout = nvrhi::BindingLayoutDesc()
 								  .setVisibility( nvrhi::ShaderType::All )
 								  .addItem( renderParmLayoutItem )
@@ -538,6 +559,8 @@ void idRenderProgManager::Init( nvrhi::IDevice* device )
 		{ BUILTIN_ENVIRONMENT_SKINNED, "builtin/legacy/environment", "_skinned",  { {"USE_GPU_SKINNING", "1" } }, true , SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_DEFAULT_SKINNED },
 		{ BUILTIN_BUMPY_ENVIRONMENT, "builtin/legacy/bumpyenvironment", "", { {"USE_GPU_SKINNING", "0" } }, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_NORMAL_CUBE },
 		{ BUILTIN_BUMPY_ENVIRONMENT_SKINNED, "builtin/legacy/bumpyenvironment", "_skinned", { {"USE_GPU_SKINNING", "1" } }, true, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_NORMAL_CUBE_SKINNED },
+		{ BUILTIN_BUMPY_ENVIRONMENT2, "builtin/legacy/bumpyenvironment2", "", { {"USE_GPU_SKINNING", "0" } }, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_OCTAHEDRON_CUBE },
+		{ BUILTIN_BUMPY_ENVIRONMENT2_SKINNED, "builtin/legacy/bumpyenvironment2", "_skinned", { {"USE_GPU_SKINNING", "1" } }, true, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_OCTAHEDRON_CUBE_SKINNED },
 
 		{ BUILTIN_DEPTH, "builtin/depth", "", { {"USE_GPU_SKINNING", "0" } }, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_CONSTANT_BUFFER_ONLY },
 		{ BUILTIN_DEPTH_SKINNED, "builtin/depth", "_skinned", { {"USE_GPU_SKINNING", "1" } }, true, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_CONSTANT_BUFFER_ONLY_SKINNED },
