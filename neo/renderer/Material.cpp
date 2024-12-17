@@ -3956,11 +3956,25 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 {
 	if( args.Argc() < 2 )
 	{
-		common->Warning( "Usage: makeMaterials <folder>\n" );
+		common->Printf( "Usage: makeMaterials <folder>\n" );
 		return;
 	}
 
-	idStr folderName = args.Argv( 1 );
+	bool stripFolderFromMaterial = false;
+
+	idStr option;
+	for( int i = 1; i < args.Argc(); i++ )
+	{
+		option = args.Argv( i );
+		option.StripLeading( '-' );
+
+		if( option.IcmpPrefix( "Unreal" ) == 0 )
+		{
+			stripFolderFromMaterial = true;
+		}
+	}
+
+	idStr folderName = args.Argv( args.Argc() - 1 );
 	idFileList* files = fileSystem->ListFilesTree( folderName, ".png|.tga|.jpg|.exr" );
 
 	idStr mtrBuffer;
@@ -3988,6 +4002,24 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 			imageName = imageName.StripFileExtension();
 
 			idStr baseName = imageName;
+			idStr resName;
+			if( baseName.IStripTrailingOnce( "_1k" ) )
+			{
+				resName = "_1k";
+			}
+			else if( baseName.IStripTrailingOnce( "_2k" ) )
+			{
+				resName = "_2k";
+			}
+			else if( baseName.IStripTrailingOnce( "_4k" ) )
+			{
+				resName = "_4k";
+			}
+			else if( baseName.IStripTrailingOnce( "_8k" ) )
+			{
+				resName = "_8k";
+			}
+
 			baseName.IStripTrailingOnce( "_diffuse" );
 			baseName.IStripTrailingOnce( "_diff" );
 			baseName.IStripTrailingOnce( "_albedo" );
@@ -3996,8 +4028,30 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 			baseName.IStripTrailingOnce( "_color" );
 			baseName.IStripTrailingOnce( "_col" );
 
+			if( idStr::FindText( imageName, "FloorTiles2", false ) != -1 )
+			{
+				mtrBuffer += "\n// FoorTiles found \n";
+			}
+
+
+			idStr materialName = baseName;
+
+			if( idStr::FindText( baseName, "_inst_inst_inst_", false ) != -1 ||
+					idStr::FindText( baseName, "_inst_inst_", false ) != -1 ||
+					idStr::FindText( baseName, "_inst_", false ) != -1 )
+			{
+				materialName.CopyRange( baseName.c_str(), 0, baseName.Length() - 2 );
+			}
+
+			if( stripFolderFromMaterial )
+			{
+				idStr matName;
+				materialName.ExtractFileName( matName );
+				materialName = matName;
+			}
+
 			//mtrBuffer += va( "%s/%s\n", folderName, imageName.c_str() );
-			mtrBuffer += baseName.c_str();
+			mtrBuffer += materialName.c_str();
 			mtrBuffer += "\n{\n";
 
 			// TODO qer_editorImage
@@ -4011,7 +4065,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 			for( auto& name : alphaNames )
 			{
 				ID_TIME_T testStamp;
-				idStr testName = baseName + name;
+				idStr testName = baseName + name + resName;
 
 				R_LoadImage( testName, NULL, NULL, NULL, &testStamp, true, NULL );
 
@@ -4078,12 +4132,12 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 
 			// ===============================
 			// test normal map
-			idStrList normalNames = { "_normal", "_nor", "_nrm", "_nrml", "_norm", "_normal_directx", "_normal_opengl" };
+			idStrList normalNames = { "_normal", "_nor", "_nrm", "_nrml", "_norm", "_nor_dx", "_nor_gl", "_normal_directx", "_normal_opengl" };
 
 			for( auto& name : normalNames )
 			{
 				ID_TIME_T testStamp;
-				idStr testName = baseName + name;
+				idStr testName = baseName + name + resName;
 
 				R_LoadImage( testName, NULL, NULL, NULL, &testStamp, true, NULL );
 
@@ -4111,7 +4165,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 			for( auto& name : roughNames )
 			{
 				ID_TIME_T testStamp;
-				idStr testName = baseName + name;
+				idStr testName = baseName + name + resName;
 
 				R_LoadImage( testName, &roughPic, &roughWidth, &roughHeight, &testStamp, true, NULL );
 				if( testStamp != FILE_NOT_FOUND_TIMESTAMP )
@@ -4130,7 +4184,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 			for( auto& name : metalNames )
 			{
 				ID_TIME_T testStamp;
-				idStr testName = baseName + name;
+				idStr testName = baseName + name + resName;
 
 				R_LoadImage( testName, &metalPic, &metalWidth, &metalHeight, &testStamp, true, NULL );
 				if( testStamp != FILE_NOT_FOUND_TIMESTAMP )
@@ -4149,7 +4203,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 			for( auto& name : aoNames )
 			{
 				ID_TIME_T testStamp;
-				idStr testName = baseName + name;
+				idStr testName = baseName + name + resName;
 
 				R_LoadImage( testName, &aoPic, &aoWidth, &aoHeight, &testStamp, true, NULL );
 				if( testStamp != FILE_NOT_FOUND_TIMESTAMP )
@@ -4196,6 +4250,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 					idStr mergedName = baseName + "_rmao.png";
 					R_WritePNG( mergedName, static_cast<byte*>( roughPic ), 4, roughWidth, roughHeight, "fs_basepath" );
 
+					mergedName.StripFileExtension();
 					mtrBuffer += va( "\trmaomap %s\n", mergedName.c_str() );
 				}
 			}
