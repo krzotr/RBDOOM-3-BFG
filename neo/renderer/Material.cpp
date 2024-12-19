@@ -3960,7 +3960,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 		return;
 	}
 
-	bool stripFolderFromMaterial = false;
+	bool ueMode = false;
 
 	idStr option;
 	for( int i = 1; i < args.Argc(); i++ )
@@ -3970,7 +3970,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 
 		if( option.IcmpPrefix( "Unreal" ) == 0 )
 		{
-			stripFolderFromMaterial = true;
+			ueMode = true;
 		}
 	}
 
@@ -4043,8 +4043,9 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 				materialName.CopyRange( baseName.c_str(), 0, baseName.Length() - 2 );
 			}
 
-			if( stripFolderFromMaterial )
+			if( ueMode )
 			{
+				// strip folder from material name
 				idStr matName;
 				materialName.ExtractFileName( matName );
 				materialName = matName;
@@ -4252,6 +4253,52 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 
 					mergedName.StripFileExtension();
 					mtrBuffer += va( "\trmaomap %s\n", mergedName.c_str() );
+				}
+			}
+
+			if( ueMode )
+			{
+				// ===============================
+				// test UE4 specular map
+				idStrList specNames = { "_specular" };
+				byte* specPic = NULL;
+				int specWidth = 0;
+				int specHeight = 0;
+
+				for( auto& name : specNames )
+				{
+					ID_TIME_T testStamp;
+					idStr testName = baseName + name + resName;
+
+					R_LoadImage( testName, &specPic, &specWidth, &specHeight, &testStamp, true, NULL );
+					if( testStamp != FILE_NOT_FOUND_TIMESTAMP )
+					{
+						// swap bytes to RMAO order
+						int c = specWidth * specHeight * 4;
+
+						for( int j = 0 ; j < c ; j += 4 )
+						{
+							byte ao = specPic[j + 0];
+							byte roughness = specPic[j + 1];
+							byte metal = specPic[j + 2];
+
+							specPic[j + 0] = roughness;
+							specPic[j + 1] = metal;
+							specPic[j + 2] = ao;
+
+							// put middle 0.5 value into alpha channel for the case we want to add displacement later
+							specPic[j + 3] = 128;
+						}
+
+						idStr mergedName = baseName + "_rmao.png";
+						R_WritePNG( mergedName, static_cast<byte*>( specPic ), 4, specWidth, specHeight, "fs_basepath" );
+
+						mergedName.StripFileExtension();
+						mtrBuffer += va( "\trmaomap %s\n", mergedName.c_str() );
+
+						R_StaticFree( specPic );
+						break;
+					}
 				}
 			}
 
