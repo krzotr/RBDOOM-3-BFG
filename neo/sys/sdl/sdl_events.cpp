@@ -694,11 +694,13 @@ sysEvent_t Sys_GetEvent()
 
 			// GameController
 			case SDL_JOYAXISMOTION:
+			case SDL_JOYBALLMOTION:
 			case SDL_JOYHATMOTION:
 			case SDL_JOYBUTTONDOWN:
 			case SDL_JOYBUTTONUP:
 			case SDL_JOYDEVICEADDED:
 			case SDL_JOYDEVICEREMOVED:
+			case SDL_JOYBATTERYUPDATED:
 				// Avoid 'unknown event' spam
 				continue;
 
@@ -772,6 +774,18 @@ sysEvent_t Sys_GetEvent()
 
 				joystick_polls.Append( joystick_poll_t( controllerButtonRemap[ev.cbutton.button][1], res.evValue2 ) );
 				return res;
+
+			case SDL_CONTROLLERDEVICEADDED:
+			case SDL_CONTROLLERDEVICEREMOVED:
+			case SDL_CONTROLLERDEVICEREMAPPED:
+			case SDL_CONTROLLERTOUCHPADDOWN:
+			case SDL_CONTROLLERTOUCHPADMOTION:
+			case SDL_CONTROLLERTOUCHPADUP:
+			case SDL_CONTROLLERSENSORUPDATE:
+			case SDL_CONTROLLERUPDATECOMPLETE_RESERVED_FOR_SDL3:
+			case SDL_CONTROLLERSTEAMHANDLEUPDATED:
+				// Avoid more 'unknown event' spam
+				continue;
 
 			case SDL_QUIT:
 				PushConsoleEvent( "quit" );
