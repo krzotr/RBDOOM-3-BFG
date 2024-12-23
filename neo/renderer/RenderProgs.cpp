@@ -345,9 +345,9 @@ void idRenderProgManager::Init( nvrhi::IDevice* device )
 	auto ppFxBindingLayout2 = nvrhi::BindingLayoutDesc()
 							  .setVisibility( nvrhi::ShaderType::All )
 							  .addItem( renderParmLayoutItem )
-							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 0 ) )		// LDR _currentRender
-							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 1 ) )		// _blueNoise
-							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )		// _currentNormals
+							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 0 ) )	// LDR _currentRender
+							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 1 ) )	// _blueNoise
+							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 2 ) )	// _currentNormals
 							  .addItem( nvrhi::BindingLayoutItem::Texture_SRV( 3 ) );	// _currentDepth
 
 	bindingLayouts[BINDING_LAYOUT_POST_PROCESS_FINAL2] = { device->createBindingLayout( ppFxBindingLayout2 ), samplerTwoBindingLayout };
@@ -575,7 +575,6 @@ void idRenderProgManager::Init( nvrhi::IDevice* device )
 		{ BUILTIN_POSTPROCESS_RETRO_2BIT, "builtin/post/retro_2bit", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_FINAL },
 		{ BUILTIN_POSTPROCESS_RETRO_C64, "builtin/post/retro_c64", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_FINAL },
 		{ BUILTIN_POSTPROCESS_RETRO_CPC, "builtin/post/retro_cpc", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_FINAL2 },
-		{ BUILTIN_POSTPROCESS_RETRO_NES, "builtin/post/retro_nes", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_FINAL },
 		{ BUILTIN_POSTPROCESS_RETRO_GENESIS, "builtin/post/retro_genesis", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_FINAL },
 		{ BUILTIN_POSTPROCESS_RETRO_PSX, "builtin/post/retro_ps1", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_FINAL },
 		{ BUILTIN_CRT_MATTIAS, "builtin/post/crt_mattias", "", {}, false, SHADER_STAGE_DEFAULT, LAYOUT_DRAW_VERT, BINDING_LAYOUT_POST_PROCESS_CRT },

@@ -6575,12 +6575,6 @@ void idRenderBackend::PostProcess( const void* data )
 
 			renderProgManager.BindShader_PostProcess_RetroCPC();
 		}
-		else if( r_renderMode.GetInteger() == RENDERMODE_NES || r_renderMode.GetInteger() == RENDERMODE_NES_HIGHRES )
-		{
-			jitterTexScale[0] = r_renderMode.GetInteger() == RENDERMODE_NES_HIGHRES ? 2.0 : 1.0;
-
-			renderProgManager.BindShader_PostProcess_RetroNES();
-		}
 		else if( r_renderMode.GetInteger() == RENDERMODE_GENESIS || r_renderMode.GetInteger() == RENDERMODE_GENESIS_HIGHRES )
 		{
 			jitterTexScale[0] = r_renderMode.GetInteger() == RENDERMODE_GENESIS_HIGHRES ? 2.0 : 1.0;
