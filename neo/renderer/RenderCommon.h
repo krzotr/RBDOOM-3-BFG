@@ -1200,8 +1200,6 @@ extern idCVar r_singleEntity;				// suppress all but one entity
 extern idCVar r_singleEnvprobe;				// suppress all but one envprobe
 extern idCVar r_singleArea;					// only draw the portal area the view is actually in
 extern idCVar r_singleSurface;				// suppress all but one surface on each entity
-extern idCVar r_shadowPolygonOffset;		// bias value added to depth test for stencil shadow drawing
-extern idCVar r_shadowPolygonFactor;		// scale value for stencil shadow drawing
 
 extern idCVar r_orderIndexes;				// perform index reorganization to optimize vertex use
 
@@ -1233,7 +1231,8 @@ extern idCVar r_shadowMapSplitWeight;
 extern idCVar r_shadowMapLodScale;
 extern idCVar r_shadowMapLodBias;
 extern idCVar r_shadowMapPolygonFactor;
-extern idCVar r_shadowMapPolygonOffset;
+extern idCVar r_dxShadowMapPolygonOffset;
+extern idCVar r_vkShadowMapPolygonOffset;
 extern idCVar r_shadowMapOccluderFacing;
 extern idCVar r_shadowMapRegularDepthBiasScale;
 extern idCVar r_shadowMapSunDepthBiasScale;
