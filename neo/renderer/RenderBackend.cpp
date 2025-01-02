@@ -3013,7 +3013,8 @@ void idRenderBackend::SetupShadowMapMatrices( viewLight_t* vLight, int side, idR
 		lightProjectionMatrix[2 * 4 + 2] = -0.999f; // adjust value to prevent imprecision issues
 
 		// the D3D clip space Z is in range [0,1] instead of [-1,1]
-		lightProjectionMatrix[3 * 4 + 2] = -zNear;
+		// FIXME -1.0f * zNear kills shadow depth
+		lightProjectionMatrix[3 * 4 + 2] = -2.0f * zNear;
 
 		lightProjectionMatrix[0 * 4 + 3] = 0.0f;
 		lightProjectionMatrix[1 * 4 + 3] = 0.0f;
