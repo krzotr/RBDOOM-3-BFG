@@ -54,6 +54,11 @@ idCVar r_skipShaderPasses( "r_skipShaderPasses", "0", CVAR_RENDERER | CVAR_BOOL,
 idCVar r_skipInteractionFastPath( "r_skipInteractionFastPath", "1", CVAR_RENDERER | CVAR_BOOL, "" );
 idCVar r_useLightStencilSelect( "r_useLightStencilSelect", "0", CVAR_RENDERER | CVAR_BOOL, "use stencil select pass" );
 
+// krzotr begin
+idCVar r_specularScale("r_specularScale", "1.0", CVAR_ARCHIVE | CVAR_RENDERER | CVAR_FLOAT, "all specular are multiplied by this value", 0, 10);
+idCVar r_specularAmbientScale("r_specularAmbientScale", "1.0", CVAR_ARCHIVE | CVAR_RENDERER | CVAR_FLOAT, "when r_forceAmbient > 0, all specular are multiplied by this value", 0, 10);
+// krzotr end
+
 extern idCVar stereoRender_swapEyes;
 
 // SRS - flag indicating whether we are drawing a 3d view vs. a 2d-only view (e.g. menu or pda)
@@ -1842,7 +1847,9 @@ void idRenderBackend::RenderInteractions( const drawSurf_t* surfList, const view
 
 		// RB: the BFG edition has exagerated specular lighting compared to vanilla Doom 3
 		// turn this back to 1.0
-		idVec4 specularColor = lightColor * 1.0f;
+		// krzotr: Added r_specularScale
+		idVec4 specularColor = lightColor * r_specularScale.GetFloat();
+
 // jmarshall
 		if( vLight->lightDef->parms.noSpecular )
 		{
@@ -2317,6 +2324,10 @@ void idRenderBackend::AmbientPass( const drawSurf_t* const* drawSurfs, int numDr
 	renderProgManager.SetRenderParm( RENDERPARM_AMBIENT_COLOR, ambientColor.ToFloatPtr() );
 
 	bool useIBL = !fillGbuffer;
+
+	// krzotr begin
+	specularColor *= r_specularAmbientScale.GetFloat();
+	// krzotr end
 
 	// setup renderparms assuming we will be drawing trivial surfaces first
 	RB_SetupForFastPathInteractions( diffuseColor, specularColor );
