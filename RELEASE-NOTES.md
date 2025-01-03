@@ -31,7 +31,7 @@ Changelog:
 
 * Added new .bproc format to avoid crashes with custom maps
 
-* Replaced Save as .map button with Apply button. Use Ctrl+S instead
+* Replaced in the ingame light editor 'Save as .map' button with 'Apply' button. Use Ctrl+S instead to save the map.
 
 * Optimized retro shaders by precomputing deviation
 
