@@ -1285,6 +1285,17 @@ void idMaterial::ParseFragmentMap( idLexer& src, newShaderStage_t* newStage )
 			cubeMap = CF_SINGLE;
 			continue;
 		}
+		if( !token.Icmp( "panoramaMap" ) )
+		{
+			cubeMap = CF_PANORAMA;
+			continue;
+		}
+		if( !token.Icmp( "hdriMap" ) )
+		{
+			cubeMap = CF_PANORAMA;
+			td = TD_R11G11B10F;
+			continue;
+		}
 		if( !token.Icmp( "nearest" ) )
 		{
 			tf = TF_NEAREST;
@@ -1804,6 +1815,24 @@ void idMaterial::ParseStage( idLexer& src, const textureRepeat_t trpDefault )
 			idStr::Copynz( imageName, str, sizeof( imageName ) );
 			cubeMap = CF_SINGLE;
 			td = TD_HIGHQUALITY_CUBE;
+			continue;
+		}
+
+		if( !token.Icmp( "panoramaMap" ) )
+		{
+			str = R_ParsePastImageProgram( src );
+			idStr::Copynz( imageName, str, sizeof( imageName ) );
+			cubeMap = CF_PANORAMA;
+			td = TD_HIGHQUALITY_CUBE;
+			continue;
+		}
+
+		if( !token.Icmp( "hdriMap" ) )
+		{
+			str = R_ParsePastImageProgram( src );
+			idStr::Copynz( imageName, str, sizeof( imageName ) );
+			cubeMap = CF_PANORAMA;
+			td = TD_R11G11B10F;
 			continue;
 		}
 

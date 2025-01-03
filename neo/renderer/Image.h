@@ -674,8 +674,10 @@ void R_ApplyCubeMapTransforms( int i, byte* data, int size );
 // SP begin
 // This method takes in a cubemap from a single image. Depending on the side (0-5),
 // the image will be extracted from data and returned. The dimensions will be size x size.
-byte* R_GenerateCubeMapSideFromSingleImage( byte* data, int srcWidth, int srcHeight, int size, int side );
+byte* R_GenerateCubeMapSideFromSingleImage( const byte* in, int srcWidth, int srcHeight, int size, int side );
 // SP end
+// RB
+byte* R_GenerateCubeMapSideFromPanoramaImage( const byte* in, int srcWidth, int srcHeight, int size, int side );
 
 idVec4 R_CalculateMipRect( uint dimensions, uint mip );
 int R_CalculateUsedAtlasPixels( int dimensions );

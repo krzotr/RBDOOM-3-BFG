@@ -574,7 +574,7 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 		{
 			opts.textureType = TT_2D_ARRAY;
 		}
-		else if( cubeFiles == CF_NATIVE || cubeFiles == CF_CAMERA || cubeFiles == CF_QUAKE1 || cubeFiles == CF_SINGLE )
+		else if( cubeFiles == CF_NATIVE || cubeFiles == CF_CAMERA || cubeFiles == CF_QUAKE1 || cubeFiles == CF_SINGLE || cubeFiles == CF_PANORAMA )
 		{
 			opts.textureType = TT_CUBIC;
 			repeat = TR_CLAMP;
@@ -714,7 +714,7 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 		//else if( toolUsage )
 		//	binarizeReason = va( "binarize: tool usage '%s'", generatedName.c_str() );
 
-		if( cubeFiles == CF_NATIVE || cubeFiles == CF_CAMERA || cubeFiles == CF_QUAKE1 || cubeFiles == CF_SINGLE )
+		if( cubeFiles == CF_NATIVE || cubeFiles == CF_CAMERA || cubeFiles == CF_QUAKE1 || cubeFiles == CF_SINGLE ||  cubeFiles == CF_PANORAMA )
 		{
 			int size;
 			byte* pics[6];
@@ -1242,7 +1242,7 @@ void idImage::Reload( bool force, nvrhi::ICommandList* commandList )
 	if( !force )
 	{
 		ID_TIME_T current;
-		if( cubeFiles == CF_NATIVE || cubeFiles == CF_CAMERA || cubeFiles == CF_QUAKE1 || cubeFiles == CF_SINGLE )
+		if( cubeFiles == CF_NATIVE || cubeFiles == CF_CAMERA || cubeFiles == CF_QUAKE1 || cubeFiles == CF_SINGLE || cubeFiles == CF_PANORAMA )
 		{
 			R_LoadCubeImages( imgName, cubeFiles, NULL, NULL, &current );
 		}

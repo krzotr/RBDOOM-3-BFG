@@ -735,6 +735,15 @@ void idBinaryImage::LoadCubeFromMemory( int width, const byte* pics[6], int numL
 					dxt.CompressImageDXT5Fast( padSrc, img.data, padSize, padSize );
 				}
 			}
+			else if( textureFormat == FMT_R11G11B10F )
+			{
+				// RB: copy it as it was a RGBA8 because of the same size
+				img.Alloc( padSize * padSize * 4 );
+				for( int i = 0; i < img.dataSize; i++ )
+				{
+					img.data[ i ] = pic[ i ];
+				}
+			}
 			else
 			{
 				fileData.format = textureFormat = FMT_RGBA8;
