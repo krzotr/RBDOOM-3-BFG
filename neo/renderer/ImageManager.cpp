@@ -356,7 +356,11 @@ idImage* idImageManager::ImageFromFunction( const char* _name, ImageGeneratorFun
 {
 	// strip any .tga file extensions from anywhere in the _name
 	idStr name = _name;
-	name.Replace( ".tga", "" );
+	idStrList imageFormats = { ".tga", ".jpg", ".png", ".exr", ".hdr" };
+	for( auto& ext : imageFormats )
+	{
+		name.Replace( ext, "" );
+	}
 	name.BackSlashesToSlashes();
 
 	// see if the image already exists
@@ -413,7 +417,11 @@ idImage*	idImageManager::ImageFromFile( const char* _name, textureFilter_t filte
 
 	// strip any .tga file extensions from anywhere in the _name, including image program parameters
 	idStrStatic< MAX_OSPATH > name = _name;
-	name.Replace( ".tga", "" );
+	idStrList imageFormats = { ".tga", ".jpg", ".png", ".exr", ".hdr" };
+	for( auto& ext : imageFormats )
+	{
+		name.Replace( ext, "" );
+	}
 	name.BackSlashesToSlashes();
 
 	//
@@ -598,7 +606,6 @@ idImageManager::GetImage
 */
 idImage* idImageManager::GetImage( const char* _name ) const
 {
-
 	if( !_name || !_name[0] || idStr::Icmp( _name, "default" ) == 0 || idStr::Icmp( _name, "_default" ) == 0 )
 	{
 		declManager->MediaPrint( "DEFAULTED\n" );
@@ -607,7 +614,11 @@ idImage* idImageManager::GetImage( const char* _name ) const
 
 	// strip any .tga file extensions from anywhere in the _name, including image program parameters
 	idStr name = _name;
-	name.Replace( ".tga", "" );
+	idStrList imageFormats = { ".tga", ".jpg", ".png", ".exr", ".hdr" };
+	for( auto& ext : imageFormats )
+	{
+		name.Replace( ext, "" );
+	}
 	name.BackSlashesToSlashes();
 
 	//
