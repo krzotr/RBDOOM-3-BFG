@@ -1300,7 +1300,7 @@ bool R_LoadCubeImages( const char* imgName, cubeFiles_t extensions, byte* pics[6
 
 		if( pics )
 		{
-			cubeMapSize = 512;
+			cubeMapSize = 1024;
 			*outSize = cubeMapSize;
 
 			for( int i = 0; i < 6; i++ )

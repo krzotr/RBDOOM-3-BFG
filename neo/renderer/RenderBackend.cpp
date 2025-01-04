@@ -5800,6 +5800,7 @@ void idRenderBackend::DrawViewInternal( const viewDef_t* _viewDef, const int ste
 	//-------------------------------------------------
 	// resolve the screen for SSR
 	//-------------------------------------------------
+	if( is3D && r_useSSR.GetBool() )
 	{
 		if( R_GetMSAASamples() > 1 )
 		{
