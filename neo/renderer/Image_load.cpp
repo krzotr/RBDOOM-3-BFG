@@ -555,9 +555,6 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 	// RB: the following does not load the source images from disk because pic is NULL
 	// but it tries to get the timestamp to see if we have a newer file than the one in the compressed .bimage
 
-	// TODO also check for alternative names like .png suffices or _rmao.png or even _rmaod.png files
-	// to support the PBR code path
-
 	if( com_productionMode.GetInteger() != 0 )
 	{
 		sourceFileTime = FILE_NOT_FOUND_TIMESTAMP;
