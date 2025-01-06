@@ -156,11 +156,11 @@ ID_INLINE void idImage::DeriveOpts()
 				opts.format = FMT_DEPTH;
 				break;
 
-			// sp begin
+			// SP begin
 			case TD_DEPTH_STENCIL:
 				opts.format = FMT_DEPTH_STENCIL;
 				break;
-			// sp end
+			// SP end
 
 			case TD_SHADOW_ARRAY:
 				opts.format = FMT_SHADOW_ARRAY;
@@ -200,6 +200,7 @@ ID_INLINE void idImage::DeriveOpts()
 				opts.format = FMT_DXT5;
 				opts.colorFormat = CFM_YCOCG_DXT5;
 				break;
+
 			case TD_SPECULAR:
 				opts.gammaMips = true;
 				opts.format = FMT_DXT1;
@@ -223,16 +224,19 @@ ID_INLINE void idImage::DeriveOpts()
 				opts.format = FMT_DXT5;
 				opts.colorFormat = CFM_DEFAULT;
 				break;
+
 			case TD_BUMP:
 				opts.format = FMT_DXT5;
 				opts.colorFormat = CFM_NORMAL_DXT5;
 				break;
+
 			case TD_FONT:
 				opts.format = FMT_DXT1;
 				opts.colorFormat = CFM_GREEN_ALPHA;
 				opts.numLevels = 4; // We only support 4 levels because we align to 16 in the exporter
 				opts.gammaMips = true;
 				break;
+
 			case TD_LIGHT:
 				// RB: TODO check binary format version
 				// D3 BFG assets require RGB565 but it introduces color banding
@@ -240,16 +244,20 @@ ID_INLINE void idImage::DeriveOpts()
 				opts.format = FMT_RGB565; //FMT_RGBA8;
 				opts.gammaMips = true;
 				break;
+
 			case TD_LOOKUP_TABLE_MONO:
 				opts.format = FMT_INT8;
 				break;
+
 			case TD_LOOKUP_TABLE_ALPHA:
 				opts.format = FMT_ALPHA;
 				break;
+
 			case TD_LOOKUP_TABLE_RGB1:
 			case TD_LOOKUP_TABLE_RGBA:
 				opts.format = FMT_RGBA8;
 				break;
+
 			// motorsep 05-17-2015; added this for uncompressed cubemap/skybox textures
 			case TD_HIGHQUALITY_CUBE:
 				opts.colorFormat = CFM_DEFAULT;
@@ -261,6 +269,13 @@ ID_INLINE void idImage::DeriveOpts()
 				opts.format = FMT_DXT5;
 				opts.gammaMips = true;
 				break;
+			// motorsep end
+
+			case TD_HDRI:
+				opts.format = FMT_R11G11B10F;
+				//opts.numLevels = 1;
+				break;
+
 			default:
 				assert( false );
 				opts.format = FMT_RGBA8;

@@ -3,7 +3,7 @@
 
 Doom 3 BFG Edition GPL Source Code
 Copyright (C) 1993-2012 id Software LLC, a ZeniMax Media company.
-Copyright (C) 2014-2024 Robert Beckebans
+Copyright (C) 2014-2025 Robert Beckebans
 Copyright (C) 2014-2016 Kot in Action Creative Artel
 
 This file is part of the Doom 3 BFG Edition GPL Source Code ("Doom 3 BFG Edition Source Code").
@@ -260,14 +260,6 @@ void idBinaryImage::Load2DFromMemory( int width, int height, const byte* pic_con
 				img.data[ i ] = pic[ i ];
 			}
 		}
-		else if( textureFormat == FMT_RGBA16F )
-		{
-			img.Alloc( scaledWidth * scaledHeight * 8 );
-			for( int i = 0; i < img.dataSize; i++ )
-			{
-				img.data[ i ] = pic[ i ];
-			}
-		}
 		else
 		{
 			fileData.format = textureFormat = FMT_RGBA8;
@@ -287,7 +279,11 @@ void idBinaryImage::Load2DFromMemory( int width, int height, const byte* pic_con
 
 		// downsample for the next level
 		byte* shrunk = NULL;
-		if( gammaMips )
+		if( textureFormat == FMT_R11G11B10F )
+		{
+			shrunk = R_MipMapR11G11B10F( pic, scaledWidth, scaledHeight );
+		}
+		else if( gammaMips )
 		{
 			shrunk = R_MipMapWithGamma( pic, scaledWidth, scaledHeight );
 		}
@@ -556,27 +552,10 @@ void idBinaryImage::Load2DAtlasMipchainFromMemory( int width, int height, const 
 				img.data[ i * 2 + 1 ] = color & 0xFF;
 			}
 		}
-		else if( textureFormat == FMT_RG16F )
-		{
-			// RB: copy it as it was a RGBA8 because of the same size
-			img.Alloc( scaledWidth * scaledHeight * 4 );
-			for( int i = 0; i < img.dataSize; i++ )
-			{
-				img.data[ i ] = pic[ i ];
-			}
-		}
 		else if( textureFormat == FMT_R11G11B10F )
 		{
 			// RB: copy it as it was a RGBA8 because of the same size
 			img.Alloc( scaledWidth * scaledHeight * 4 );
-			for( int i = 0; i < img.dataSize; i++ )
-			{
-				img.data[ i ] = pic[ i ];
-			}
-		}
-		else if( textureFormat == FMT_RGBA16F )
-		{
-			img.Alloc( scaledWidth * scaledHeight * 8 );
 			for( int i = 0; i < img.dataSize; i++ )
 			{
 				img.data[ i ] = pic[ i ];
@@ -598,21 +577,6 @@ void idBinaryImage::Load2DAtlasMipchainFromMemory( int width, int height, const 
 			Mem_Free( dxtPic );
 			dxtPic = NULL;
 		}
-
-		// downsample for the next level
-		/*
-		byte* shrunk = NULL;
-		if( gammaMips )
-		{
-			shrunk = R_MipMapWithGamma( pic, scaledWidth, scaledHeight );
-		}
-		else
-		{
-			shrunk = R_MipMap( pic, scaledWidth, scaledHeight );
-		}
-		Mem_Free( pic );
-		pic = shrunk;
-		*/
 
 		Mem_Free( pic );
 	}
@@ -753,7 +717,11 @@ void idBinaryImage::LoadCubeFromMemory( int width, const byte* pics[6], int numL
 
 			// downsample for the next level
 			byte* shrunk = NULL;
-			if( gammaMips )
+			if( textureFormat == FMT_R11G11B10F )
+			{
+				shrunk = R_MipMapR11G11B10F( pic, scaledWidth, scaledWidth );
+			}
+			else if( gammaMips )
 			{
 				shrunk = R_MipMapWithGamma( pic, scaledWidth, scaledWidth );
 			}

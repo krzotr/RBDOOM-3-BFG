@@ -3,7 +3,7 @@
 
 Doom 3 BFG Edition GPL Source Code
 Copyright (C) 1993-2012 id Software LLC, a ZeniMax Media company.
-Copyright (C) 2021 Robert Beckebans
+Copyright (C) 2021-2025 Robert Beckebans
 Copyright (C) 2021 Stephen Pridham
 
 This file is part of the Doom 3 BFG Edition GPL Source Code ("Doom 3 BFG Edition Source Code").
@@ -32,6 +32,8 @@ If you have questions concerning this license or the applicable additional terms
 
 
 #include "RenderCommon.h"
+
+#include "../libs/mesa/format_r11g11b10f.h"
 
 /*
 ================
@@ -462,6 +464,152 @@ byte* R_MipMap( const byte* in, int width, int height )
 
 	return out;
 }
+
+// RB begin
+byte* R_MipMapR11G11B10F( const byte* in, int width, int height )
+{
+	int		i, j;
+	const byte*	in_p;
+	byte*	out, *out_p;
+	int		row;
+	int		newWidth, newHeight;
+
+	if( width < 1 || height < 1 || ( width + height == 2 ) )
+	{
+		return NULL;
+	}
+
+	row = width * 4;
+
+	newWidth = width >> 1;
+	newHeight = height >> 1;
+	if( !newWidth )
+	{
+		newWidth = 1;
+	}
+	if( !newHeight )
+	{
+		newHeight = 1;
+	}
+	out = ( byte* )R_StaticAlloc( newWidth * newHeight * 4, TAG_IMAGE );
+	out_p = out;
+
+	in_p = in;
+
+	width >>= 1;
+	height >>= 1;
+
+	typedef union
+	{
+		uint32	i;
+		byte	b[4];
+	} convert_t;
+
+	if( width == 0 || height == 0 )
+	{
+		width += height;	// get largest
+		for( i = 0 ; i < width ; i++, out_p += 4, in_p += 8 )
+		{
+			convert_t p1;
+			p1.b[0] = in_p[0];
+			p1.b[1] = in_p[1];
+			p1.b[2] = in_p[2];
+			p1.b[3] = in_p[3];
+
+			convert_t p2;
+			p2.b[0] = in_p[4];
+			p2.b[1] = in_p[5];
+			p2.b[2] = in_p[6];
+			p2.b[3] = in_p[7];
+
+			float c1[3];
+			r11g11b10f_to_float3( p1.i, c1 );
+
+			float c2[3];
+			r11g11b10f_to_float3( p2.i, c2 );
+
+			float rgb[3];
+			rgb[0] = ( c1[0] + c2[0] ) * 0.5f;
+			rgb[1] = ( c1[1] + c2[1] ) * 0.5f;
+			rgb[2] = ( c1[2] + c2[2] ) * 0.5f;
+
+			p1.i = float3_to_r11g11b10f( rgb );
+
+			out_p[0] = p1.b[0];
+			out_p[1] = p1.b[1];
+			out_p[2] = p1.b[2];
+			out_p[3] = p1.b[3];
+
+			//out_p[0] = ( in_p[0] + in_p[4] ) >> 1;
+			//out_p[1] = ( in_p[1] + in_p[5] ) >> 1;
+			//out_p[2] = ( in_p[2] + in_p[6] ) >> 1;
+			//out_p[3] = ( in_p[3] + in_p[7] ) >> 1;
+		}
+		return out;
+	}
+
+	for( i = 0 ; i < height ; i++, in_p += row )
+	{
+		for( j = 0 ; j < width ; j++, out_p += 4, in_p += 8 )
+		{
+			convert_t p1;
+			p1.b[0] = in_p[0];
+			p1.b[1] = in_p[1];
+			p1.b[2] = in_p[2];
+			p1.b[3] = in_p[3];
+
+			convert_t p2;
+			p2.b[0] = in_p[4];
+			p2.b[1] = in_p[5];
+			p2.b[2] = in_p[6];
+			p2.b[3] = in_p[7];
+
+			convert_t p3;
+			p3.b[0] = in_p[row + 0];
+			p3.b[1] = in_p[row + 1];
+			p3.b[2] = in_p[row + 2];
+			p3.b[3] = in_p[row + 3];
+
+			convert_t p4;
+			p4.b[0] = in_p[row + 4];
+			p4.b[1] = in_p[row + 5];
+			p4.b[2] = in_p[row + 6];
+			p4.b[3] = in_p[row + 7];
+
+			float c1[3];
+			r11g11b10f_to_float3( p1.i, c1 );
+
+			float c2[3];
+			r11g11b10f_to_float3( p2.i, c2 );
+
+			float c3[3];
+			r11g11b10f_to_float3( p3.i, c3 );
+
+			float c4[3];
+			r11g11b10f_to_float3( p4.i, c4 );
+
+			float rgb[3];
+			rgb[0] = ( c1[0] + c2[0] + c3[0] + c4[0] ) * 0.25f;
+			rgb[1] = ( c1[1] + c2[1] + c3[1] + c4[1] ) * 0.25f;
+			rgb[2] = ( c1[2] + c2[2] + c3[2] + c4[2] ) * 0.25f;
+
+			p1.i = float3_to_r11g11b10f( rgb );
+
+			out_p[0] = p1.b[0];
+			out_p[1] = p1.b[1];
+			out_p[2] = p1.b[2];
+			out_p[3] = p1.b[3];
+
+			//out_p[0] = ( in_p[0] + in_p[4] + in_p[row + 0] + in_p[row + 4] ) >> 2;
+			//out_p[1] = ( in_p[1] + in_p[5] + in_p[row + 1] + in_p[row + 5] ) >> 2;
+			//out_p[2] = ( in_p[2] + in_p[6] + in_p[row + 2] + in_p[row + 6] ) >> 2;
+			//out_p[3] = ( in_p[3] + in_p[7] + in_p[row + 3] + in_p[row + 7] ) >> 2;
+		}
+	}
+
+	return out;
+}
+// RB end
 
 /*
 ==================

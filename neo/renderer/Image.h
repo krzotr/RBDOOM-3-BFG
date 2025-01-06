@@ -207,6 +207,8 @@ No texture is ever used that does not have a corresponding idImage.
 static const int	MAX_TEXTURE_LEVELS = 14;
 
 // How is this texture used?  Determines the storage and color format
+// NOTE: be very careful when editing these because it might break older .bimage files or the lookup name
+// Only add new entries at the bottom
 typedef enum
 {
 	TD_SPECULAR,			// may be compressed, and always zeros the alpha channel
@@ -227,28 +229,33 @@ typedef enum
 	TD_HIGHQUALITY_CUBE,	// motorsep - Uncompressed cubemap texture (RGB colorspace)
 	TD_LOWQUALITY_CUBE,		// motorsep - Compressed cubemap texture (RGB colorspace DXT5)
 	TD_SHADOW_ARRAY,		// 2D depth buffer array for shadow mapping
-	TD_RG16F,
-	TD_RGBA16F,
-	TD_RGBA16S,
-	TD_RGBA32F,
-	TD_R32F,
+	TD_RG16F,				// BRDF lookup table
+	TD_RGBA16F,				// RT = render target format only, not written to disk
+	TD_RGBA16S,				// RT only
+	TD_RGBA32F,				// RT only
 	TD_R11G11B10F,			// memory efficient HDR RGB format with only 32bpp
+	// ^-- used up until RBDOOM-3-BFG 1.3
+	TD_HDRI,				// RB: R11G11B10F or BC6
 	// RB end
-	TD_R8F,					// Stephen: Added for ambient occlusion render target.
-	TD_LDR,					// Stephen: Added for SRGB render target when tonemapping.
-	TD_DEPTH_STENCIL,       // depth buffer and stencil buffer
+	TD_R32F,				// RT only
+	TD_R8F,					// SP: RT only, added for ambient occlusion
+	TD_LDR,					// SP: RT only, added for SRGB render target when tonemapping
+	TD_DEPTH_STENCIL,       // SP: RT only, depth buffer and stencil buffer
 } textureUsage_t;
 
+// NOTE: be very careful when editing these because it might break older .bimage files or the lookup name
+// Only add new entries at the bottom
 typedef enum
 {
 	CF_2D,			// not a cube map
 	CF_NATIVE,		// _px, _nx, _py, etc, directly sent to GL
 	CF_CAMERA,		// _forward, _back, etc, rotated and flipped as needed before sending to GL
-	CF_QUAKE1,		// _ft, _bk, etc, rotated and flipped as needed before sending to GL
-	CF_PANORAMA,	// TODO latlong encoded HDRI panorama typically used by Substance or Blender
+	CF_PANORAMA,	// RB: latlong encoded HDRI panorama typically used by Substance or Blender
 	CF_2D_ARRAY,	// not a cube map but not a single 2d texture either
 	CF_2D_PACKED_MIPCHAIN, // usually 2d but can be an octahedron, packed mipmaps into single 2d texture atlas and limited to dim^2
+	// ^-- used up until RBDOOM-3-BFG 1.3
 	CF_SINGLE,      // SP: A single texture cubemap. All six sides in one image.
+	CF_QUAKE1,		// RB: _ft, _bk, etc, rotated and flipped as needed before sending to GL
 } cubeFiles_t;
 
 typedef void ( *ImageGeneratorFunction )( idImage* image, nvrhi::ICommandList* commandList );
@@ -663,6 +670,7 @@ byte* R_ResampleTexture( const byte* in, int inwidth, int inheight, int outwidth
 byte* R_MipMapWithAlphaSpecularity( const byte* in, int width, int height );
 byte* R_MipMapWithGamma( const byte* in, int width, int height );
 byte* R_MipMap( const byte* in, int width, int height );
+byte* R_MipMapR11G11B10F( const byte* in, int width, int height );
 
 // these operate in-place on the provided pixels
 void R_BlendOverTexture( byte* data, int pixelCount, const byte blend[4] );

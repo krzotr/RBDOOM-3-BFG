@@ -1293,7 +1293,7 @@ void idMaterial::ParseFragmentMap( idLexer& src, newShaderStage_t* newStage )
 		if( !token.Icmp( "hdriMap" ) )
 		{
 			cubeMap = CF_PANORAMA;
-			td = TD_R11G11B10F;
+			td = TD_HDRI;
 			continue;
 		}
 		if( !token.Icmp( "nearest" ) )
@@ -1832,7 +1832,7 @@ void idMaterial::ParseStage( idLexer& src, const textureRepeat_t trpDefault )
 			str = R_ParsePastImageProgram( src );
 			idStr::Copynz( imageName, str, sizeof( imageName ) );
 			cubeMap = CF_PANORAMA;
-			td = TD_R11G11B10F;
+			td = TD_HDRI;
 			continue;
 		}
 
