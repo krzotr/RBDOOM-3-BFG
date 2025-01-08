@@ -4173,7 +4173,7 @@ CONSOLE_COMMAND_SHIP( makeMaterials, "Make .mtr file from a models or textures f
 
 				if( testStamp != FILE_NOT_FOUND_TIMESTAMP )
 				{
-					if( name.Cmp( "_normal_opengl" ) == 0 )
+					if( name.Cmp( "_normal_opengl" ) == 0 || ueMode )
 					{
 						mtrBuffer += va( "\tnormalmap invertGreen( %s )\n", testName.c_str() );
 					}
