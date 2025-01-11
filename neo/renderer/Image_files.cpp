@@ -853,7 +853,7 @@ void R_WriteEXR( const char* filename, const void* rgba16f, int channelsPerPixel
 	if( size == 0 )
 	{
 		common->Error( "R_WriteEXR( %s ): Save EXR err: %s\n", filename, err );
-
+		FreeEXRErrorMessage( err );
 		goto cleanup;
 	}
 
