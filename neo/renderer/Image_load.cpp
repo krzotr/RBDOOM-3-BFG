@@ -379,9 +379,6 @@ void idImage::GenerateImage( const byte* pic, int width, int height, textureFilt
 #if defined( USE_NVRHI ) && !defined( DMAP )
 		if( commandList )
 		{
-			const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
-			const int bytesPerBlock = info.bytesPerBlock;
-
 			commandList->beginTrackingTextureState( texture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common );
 
 			for( int i = 0; i < im.NumImages(); i++ )
@@ -454,15 +451,8 @@ void idImage::GenerateCubeImage( const byte* pic[6], int size, textureFilter_t f
 	AllocImage();
 
 #if defined( USE_NVRHI ) && !defined( DMAP )
-	int numChannels = 4;
-	int bytesPerPixel = numChannels;
-	if( opts.format == FMT_ALPHA || opts.format == FMT_DXT1 || opts.format == FMT_INT8 || opts.format == FMT_R8 )
-	{
-		bytesPerPixel = 1;
-	}
-
-	const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
-	bytesPerPixel = info.bytesPerBlock;
+	//const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
+	//bytesPerPixel = info.bytesPerBlock;
 
 	commandList->beginTrackingTextureState( texture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common );
 
@@ -617,6 +607,12 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 
 	idStrStatic< MAX_OSPATH > generatedName = GetName();
 	GetGeneratedName( generatedName, usage, cubeFiles );
+
+	//if( generatedName.Find( "textures/base_floor/a_stairs_d02", false ) >= 0 )
+	//{
+	// #924
+	//int c = 1;
+	//}
 
 	// RB: try to load the .bimage and skip if sourceFileTime is newer
 	idBinaryImage im( generatedName );
@@ -812,8 +808,6 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 				memset( clear.Ptr(), 0, clear.Size() );
 
 #if defined( USE_NVRHI ) && !defined( DMAP )
-				const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
-
 				commandList->beginTrackingTextureState( texture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common );
 				for( int level = 0; level < opts.numLevels; level++ )
 				{
@@ -893,9 +887,6 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 	AllocImage();
 
 #if defined( USE_NVRHI ) && !defined( DMAP )
-	const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
-	const int bytesPerPixel = info.bytesPerBlock / info.blockSize;
-
 	commandList->beginTrackingTextureState( texture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common );
 
 	for( int i = 0; i < im.NumImages(); i++ )
@@ -903,45 +894,7 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 		const bimageImage_t& img = im.GetImageHeader( i );
 		const byte* pic = im.GetImageData( i );
 
-#if 0
-		if( opts.format == FMT_RGB565 )
-		{
-			int bufferW = img.width;
-			int bufferH = img.height;
-
-			if( IsCompressed() )
-			{
-				bufferW = ( img.width + 3 ) & ~3;
-				bufferH = ( img.height + 3 ) & ~3;
-			}
-
-			int size = bufferW * bufferH * BitsForFormat( opts.format ) / 8;
-
-			byte* data = ( byte* )Mem_Alloc16( size, TAG_IMAGE );
-			memcpy( data, pic, size );
-
-			byte* imgData = ( byte* )pic;
-			for( int j = 0; j < size; j += 2 )
-			{
-				data[i] = imgData[i + 1];
-				data[i + 1] = imgData[i];
-			}
-
-			commandList->writeTexture( texture, img.destZ, img.level, data, GetRowPitch( opts.format, img.width ) );
-
-			Mem_Free16( data );
-		}
-		else
-#endif
-		{
-			int bufferW = img.width;
-			if( IsCompressed() )
-			{
-				bufferW = ( img.width + 3 ) & ~3;
-			}
-
-			commandList->writeTexture( texture, img.destZ, img.level, pic, GetRowPitch( opts.format, img.width ) );
-		}
+		commandList->writeTexture( texture, img.destZ, img.level, pic, GetRowPitch( opts.format, img.width ) );
 	}
 	commandList->setPermanentTextureState( texture, nvrhi::ResourceStates::ShaderResource );
 	commandList->commitBarriers();
@@ -1006,25 +959,9 @@ void idImage::UploadScratch( const byte* data, int cols, int rows, nvrhi::IComma
 		}
 
 #if defined( USE_NVRHI )
-		int numChannels = 4;
-		int bytesPerPixel = numChannels;
-		if( opts.format == FMT_ALPHA || opts.format == FMT_DXT1 || opts.format == FMT_INT8 || opts.format == FMT_R8 )
-		{
-			bytesPerPixel = 1;
-		}
-
-		const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
-		bytesPerPixel = info.bytesPerBlock;
-
 		SetSamplerState( TF_LINEAR, TR_CLAMP );
 
 		commandList->beginTrackingTextureState( texture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common );
-
-		int bufferW = opts.width;
-		if( IsCompressed() )
-		{
-			bufferW = ( opts.width + 3 ) & ~3;
-		}
 
 		for( int i = 0; i < 6; i++ )
 		{
@@ -1055,23 +992,7 @@ void idImage::UploadScratch( const byte* data, int cols, int rows, nvrhi::IComma
 
 		if( data != NULL && commandList != NULL )
 		{
-			int numChannels = 4;
-			int bytesPerPixel = numChannels;
-			if( opts.format == FMT_ALPHA || opts.format == FMT_DXT1 || opts.format == FMT_INT8 || opts.format == FMT_R8 || opts.format == FMT_LUM8 )
-			{
-				bytesPerPixel = 1;
-			}
-
-			const nvrhi::FormatInfo& info = nvrhi::getFormatInfo( texture->getDesc().format );
-			bytesPerPixel = info.bytesPerBlock;
-
 			SetSamplerState( TF_LINEAR, TR_REPEAT );
-
-			int bufferW = opts.width;
-			if( IsCompressed() )
-			{
-				bufferW = ( opts.width + 3 ) & ~3;
-			}
 
 			commandList->beginTrackingTextureState( texture, nvrhi::AllSubresources, nvrhi::ResourceStates::Common );
 
