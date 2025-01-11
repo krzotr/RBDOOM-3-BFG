@@ -512,12 +512,15 @@ void	R_WriteEXR( const char* filename, const void* data, int channelsPerPixel, i
 
 class idImageManager
 {
+	friend class idImage;
+
 public:
 
 	idImageManager()
 	{
 		insideLevelLoad = false;
 		preloadingMapImages = false;
+		cacheImages = false;
 		commandList = nullptr;
 	}
 
@@ -600,10 +603,6 @@ public:
 	idImage*			taaFeedback1Image;
 	idImage*			taaFeedback2Image;
 	idImage*			bloomRenderImage[2];
-	//idImage*			glowImage[2];					// contains any glowable surface information.
-	//idImage*			glowDepthImage[2];
-	//idImage*			accumTransparencyImage;
-	//idImage*			revealTransparencyImage;
 	idImage*			envprobeHDRImage;
 	idImage*			envprobeDepthImage;
 	idImage*			heatmap5Image;
@@ -643,13 +642,18 @@ public:
 	bool				ExcludePreloadImage( const char* name );
 
 	idList<idImage*, TAG_IDLIB_LIST_IMAGE>	images;
+private:
 	idHashIndex								imageHash;
+
+	static void			CacheGlobalIlluminationData_f( const idCmdArgs& args ); // RB
+	static void			R_ListImages_f( const idCmdArgs& args );
 
 	// Transient list of images to load on the main thread to the gpu. Freed after images are loaded.
 	idList<idImage*, TAG_IDLIB_LIST_IMAGE>	imagesToLoad;
 
 	bool									insideLevelLoad;			// don't actually load images now
 	bool									preloadingMapImages;		// unless this is set
+	bool									cacheImages;				// similar to preload but surpresses prints
 
 	nvrhi::CommandListHandle				commandList;
 };

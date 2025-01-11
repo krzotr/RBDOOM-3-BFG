@@ -137,7 +137,7 @@ static int R_QsortImageName( const void* a, const void* b )
 R_ListImages_f
 ===============
 */
-void R_ListImages_f( const idCmdArgs& args )
+void idImageManager::R_ListImages_f( const idCmdArgs& args )
 {
 	int		i, partialSize;
 	idImage*	image;
@@ -770,6 +770,7 @@ void idImageManager::Init()
 	CreateIntrinsicImages();
 
 	cmdSystem->AddCommand( "reloadImages", R_ReloadImages_f, CMD_FL_RENDERER, "reloads images" );
+	cmdSystem->AddCommand( "cacheGlobalIlluminationData", CacheGlobalIlluminationData_f, CMD_FL_RENDERER, "turn env/maps/*.exr files into .bimage files" );
 #endif
 	cmdSystem->AddCommand( "listImages", R_ListImages_f, CMD_FL_RENDERER, "lists images" );
 	cmdSystem->AddCommand( "combineCubeImages", R_CombineCubeImages_f, CMD_FL_RENDERER, "combines six images for roq compression" );
@@ -1108,3 +1109,52 @@ void idImageManager::LoadDeferredImages( nvrhi::ICommandList* _commandList )
 
 	globalImages->imagesToLoad.Clear();
 }
+
+#include "CmdlineProgressbar.h"
+
+#if !defined( DMAP )
+void idImageManager::CacheGlobalIlluminationData_f( const idCmdArgs& args )
+{
+	common->Printf( "Caching images to bimage files...\n" );
+
+	int	start = Sys_Milliseconds();
+	globalImages->preloadingMapImages = true;
+	globalImages->cacheImages = true;
+
+	idFileList* files = fileSystem->ListFilesTree( "env/maps", "*.exr", true );
+	int numFiles = files->GetNumFiles();
+
+	CommandlineProgressBar progressBar( numFiles, renderSystem->GetWidth(), renderSystem->GetHeight() );
+	progressBar.Start();
+
+	for( int i = 0; i < files->GetNumFiles(); i++ )
+	{
+		const char* filename = files->GetFile( i );
+
+		if( idStr::FindText( filename, "envprobe" ) != -1 )
+		{
+			if( idStr::FindText( filename, "_spec" ) != -1 )
+			{
+				globalImages->ImageFromFile( filename, TF_DEFAULT, TR_CLAMP, TD_R11G11B10F, CF_2D_PACKED_MIPCHAIN );
+			}
+			else
+			{
+				globalImages->ImageFromFile( filename, TF_LINEAR, TR_CLAMP, TD_R11G11B10F, CF_2D_PACKED_MIPCHAIN );
+			}
+		}
+		else if( idStr::FindText( filename, "lightgrid" ) != -1 )
+		{
+			globalImages->ImageFromFile( filename, TF_LINEAR, TR_CLAMP, TD_R11G11B10F, CF_2D );
+		}
+
+		progressBar.Increment( true );
+	}
+	fileSystem->FreeFileList( files );
+
+	int	end = Sys_Milliseconds();
+	common->Printf( "%05d images cached in %5.1f seconds\n", numFiles, ( end - start ) * 0.001 );
+	common->Printf( "----------------------------------------\n" );
+	globalImages->preloadingMapImages = false;
+	globalImages->cacheImages = false;
+}
+#endif
