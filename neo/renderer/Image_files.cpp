@@ -573,6 +573,7 @@ static void LoadEXR( const char* filename, unsigned char** pic, int* width, int*
 		if( ret != 0 )
 		{
 			common->Error( "LoadEXR( %s ): %s\n", filename, err );
+			FreeEXRErrorMessage( err );
 			return;
 		}
 	}
