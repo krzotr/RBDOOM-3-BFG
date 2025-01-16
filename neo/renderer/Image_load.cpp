@@ -709,10 +709,6 @@ void idImage::ActuallyLoadImage( bool fromBackEnd, nvrhi::ICommandList* commandL
 		}
 		else if( header.colorFormat != opts.colorFormat )
 		{
-			binarizeReason = va( "binarize: mismatch color format '%s'", generatedName.c_str() );
-		}
-		else if( header.colorFormat != opts.colorFormat )
-		{
 			binarizeReason = va( "binarize: mismatched color format '%s'", generatedName.c_str() );
 		}
 		else if( header.textureType != opts.textureType )
