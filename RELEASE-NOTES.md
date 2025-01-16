@@ -18,6 +18,32 @@ _______________________________________
 TBD - RBDOOM-3-BFG 1.6.0
 _______________________________
 
+## .plan - January 16, 2025
+
+This test build comes with HDRI support and a few critical bugfixes that save video memory and avoid unnessessary duplicated .bimage files.
+
+Changelog:
+
+* Fixed bad lightgrid lookups if models span multiple areas. close #965
+
+* Fixed several bugs in the .bimage lookup logic
+
+* Added HDRI extension to the material system
+
+* Added default loading screen for custom maps
+
+* Simplified image loading code
+
+* Fixed potential memleaks in R_LoadEXR and R_WriteEXR
+
+* Added cacheGlobalIlluminationData cmd to turn env/maps/*.exr into .bimage files
+
+* Apply invertGreen( normalmap ) with DX normalmaps and makeMaterials
+
+* Added some docs by Mr.Elusive about the BFG architecture
+
+
+
 ## .plan - January 02, 2025
 
 This test build comes with a new TrenchBroomBFG build that drastically reduces the load time of maps that use custom models with higher polycounts than the typical Doom 3 models. This reduces the load time to seconds instead of minutes and makes the editor feasible to work with more modern models like Epic's Sun Temple demo or Crytek's Sponza level.
