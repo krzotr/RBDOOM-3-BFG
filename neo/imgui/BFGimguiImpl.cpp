@@ -122,8 +122,10 @@ bool HandleKeyEvent( const sysEvent_t& keyEvent )
 		// RB: allow navigation like in a level editor
 		g_MousePressed[1] = pressed;
 
-		ImGuiTools::SetReleaseToolMouse( !pressed );
-
+		if( ImGuiTools::AreEditorsActive() )
+		{
+			ImGuiTools::SetReleaseToolMouse( !pressed );
+		}
 		//common->Printf( "mouse2 pressed %d\n", int( pressed ) );
 
 		return true;
@@ -131,6 +133,7 @@ bool HandleKeyEvent( const sysEvent_t& keyEvent )
 
 	if( g_MousePressed[1] )
 	{
+		// RB: ignore everything as long right mouse button is pressed
 		return false;
 	}
 
