@@ -688,12 +688,16 @@ void idCommonLocal::Frame()
 				gameTimeResidual += clampedDeltaMilliseconds * timescale.GetFloat();
 
 				// don't run any frames when paused
+				/*
+				RB moved down
+
 				if( pauseGame )
 				{
 					gameFrame++;
 					gameTimeResidual = 0;
 					break;
 				}
+				*/
 
 				// debug cvar to force multiple game tics
 				if( com_fixedTic.GetInteger() > 0 )
@@ -751,6 +755,14 @@ void idCommonLocal::Frame()
 				// com_engineHz is 60, so sleep a bit and check again
 				Sys_Sleep( 0 );
 			}
+		}
+
+		// don't run any frames when paused
+		// RB: reset numGameFrames here so we use the sleep above
+		// and don't run as many frames as possible on the GPU
+		if( pauseGame )
+		{
+			numGameFrames = 0;
 		}
 
 		//--------------------------------------------
