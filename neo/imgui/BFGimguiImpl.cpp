@@ -117,6 +117,26 @@ bool HandleKeyEvent( const sysEvent_t& keyEvent )
 
 	ImGuiIO& io = ImGui::GetIO();
 
+	if( keyNum == K_MOUSE2 )
+	{
+		// RB: allow navigation like in a level editor
+		g_MousePressed[1] = pressed;
+
+		if( ImGuiTools::AreEditorsActive() )
+		{
+			ImGuiTools::SetReleaseToolMouse( !pressed );
+		}
+		//common->Printf( "mouse2 pressed %d\n", int( pressed ) );
+
+		return true;
+	}
+
+	if( g_MousePressed[1] )
+	{
+		// RB: ignore everything as long right mouse button is pressed
+		return false;
+	}
+
 	if( keyNum < K_JOY1 )
 	{
 		// keyboard input as direct input scancodes
@@ -230,7 +250,7 @@ bool ShowWindows()
 
 bool UseInput()
 {
-	return ImGuiTools::ReleaseMouseForTools() || imgui_showDemoWindow.GetBool();
+	return ( ImGuiTools::ReleaseMouseForTools() || imgui_showDemoWindow.GetBool() );
 }
 
 void StyleGruvboxDark()
@@ -752,7 +772,7 @@ void NotifyDisplaySizeChanged( int width, int height )
 // inject a sys event
 bool InjectSysEvent( const sysEvent_t* event )
 {
-	if( IsInitialized() && UseInput() )
+	if( IsInitialized() && ( UseInput() || RightMouseActive() ) )
 	{
 		if( event == NULL )
 		{
@@ -793,6 +813,11 @@ bool InjectSysEvent( const sysEvent_t* event )
 		}
 	}
 	return false;
+}
+
+bool RightMouseActive()
+{
+	return g_MousePressed[1];
 }
 
 bool InjectMouseWheel( int delta )

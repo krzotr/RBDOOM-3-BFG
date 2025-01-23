@@ -249,7 +249,7 @@ public:
 	idBlockAlloc<areaReference_t, 1024> areaReferenceAllocator;
 	idBlockAlloc<idInteraction, 256>	interactionAllocator;
 
-#ifdef ID_PC
+#if 1 //def ID_PC
 	static const int MAX_DECAL_SURFACES = 32;
 #else
 	static const int MAX_DECAL_SURFACES = 16;

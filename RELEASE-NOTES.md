@@ -18,6 +18,74 @@ _______________________________________
 TBD - RBDOOM-3-BFG 1.6.0
 _______________________________
 
+## .plan - January 16, 2025
+
+This test build comes with HDRI support and a few critical bugfixes that save video memory and avoid unnessessary duplicated .bimage files.
+
+Changelog:
+
+* Fixed bad lightgrid lookups if models span multiple areas. close #965
+
+* Fixed several bugs in the .bimage lookup logic
+
+* Added HDRI extension to the material system
+
+* Added default loading screen for custom maps
+
+* Simplified image loading code
+
+* Fixed potential memleaks in R_LoadEXR and R_WriteEXR
+
+* Added cacheGlobalIlluminationData cmd to turn env/maps/*.exr into .bimage files
+
+* Apply invertGreen( normalmap ) with DX normalmaps and makeMaterials
+
+* Added some docs by Mr.Elusive about the BFG architecture
+
+
+
+## .plan - January 02, 2025
+
+This test build comes with a new TrenchBroomBFG build that drastically reduces the load time of maps that use custom models with higher polycounts than the typical Doom 3 models. This reduces the load time to seconds instead of minutes and makes the editor feasible to work with more modern models like Epic's Sun Temple demo or Crytek's Sponza level.
+
+Besides that RBDoom has a new binary model format that was necessary to avoid crashes when reloading custom maps.
+This will also regenerate all models like .glb -> .bglb, .obj -> .bobj and so on.
+
+Changelog:
+
+* Reduced peter panning effect and shadow acne with Nvidia cards
+
+* Added new .bproc format to avoid crashes with custom maps
+
+* Replaced in the ingame light editor 'Save as .map' button with 'Apply' button. Use Ctrl+S instead to save the map.
+
+* Optimized retro shaders by precomputing deviation
+
+* Deleted NES shader
+
+* Disabled scrolling scanlines in Newpixie CRT shader
+
+* Replaced Sega retro shader quant with a fixed 64 color palette
+
+* Don't quit rbdmap quietly if running in imtui mode
+
+* Quadruppled vertex cache limits like before in RBDoom 1.4
+
+* Extended makeMaterials to handle UE4 specular maps
+
+* Added textures/common/black material to block light behind walls
+
+* glTF culling bugfix caused by uninitialized variable
+
+* Fixed menu button controller mappings with SDL
+
+* Use correct controller button->joystick event mapping for SDL joystick polling
+
+Changelog TrenchBroomBFG:
+
+* Replaced ray traced model picker code using TinyBVH which allows to load bigger glTF 2 maps almost instantly instead of minutes
+
+
 ## .plan - December 6, 2024
 
 This is a first test build for the new blood effects.
@@ -124,7 +192,7 @@ Immerse yourself in the authentic Commodore 64 mode, faithfully replicating the 
 
 The retro rendering modes transport you back to the golden age of gaming, with a resolution that mimics the beloved 320x240 display, now extended to a widescreen 480x270 format. To enhance the arcade feel, two new CRT filters are included that overlay the entire game, including Doom 1 & 2.
 
-To access these retro rendering modes, simply navigate to the menu options and select your desired mode. Alternatively, you can control the rendering mode by modifying the `r_renderMode` variable. The available values for `r_renderMode` are as follows: Default (0) for Doom 3, 2-bit CGA (1), 2-bit CGA Highres(2), Commodore 64 (3), Commodore 64 Highres (4), Amstrad CPC (5), Amstrad CPC Highres (6), NES (7), NES Highres (8), Sega Genesis (9), Sega Genesis Highres (10) and Sony PSX (11).
+To access these retro rendering modes, simply navigate to the menu options and select your desired mode. Alternatively, you can control the rendering mode by modifying the `r_renderMode` variable. The available values for `r_renderMode` are as follows: Default (0) for Doom 3, 2-bit CGA (1), 2-bit CGA Highres(2), Commodore 64 (3), Commodore 64 Highres (4), Amstrad CPC (5), Amstrad CPC Highres (6), Sega Genesis (7), Sega Genesis Highres (8) and Sony PSX (9).
 
 <img src="https://i.imgur.com/W8umJ3a.png" width="800">
 

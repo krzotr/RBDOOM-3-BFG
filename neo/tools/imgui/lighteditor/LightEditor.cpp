@@ -1017,9 +1017,9 @@ void LightEditor::Draw()
 
 		ImGui::Spacing();
 
-		if( ImGui::Button( "Save to .map" ) )
+		if( ImGui::Button( "Apply" ) )
 		{
-			SaveChanges( true );
+			SaveChanges( false );
 			showTool = false;
 		}
 		else if( ImGui::SameLine(), ImGui::Button( "Cancel" ) )
@@ -1229,7 +1229,7 @@ void LightEditor::Draw()
 	if( isShown && !showTool )
 	{
 		isShown = showTool;
-		impl::SetReleaseToolMouse( false );
+		SetReleaseToolMouse( false );
 	}
 }
 
