@@ -452,6 +452,7 @@ sysEvent_t Sys_GetEvent()
 						// DG: un-pause the game when focus is gained, that also re-grabs the input
 						//     disabling the cursor is now done once in GLimp_Init() because it should always be disabled
 						cvarSystem->SetCVarBool( "com_pause", false );
+						cvarSystem->SetCVarBool( "com_activeApp", true );
 						// DG end
 						break;
 					}
@@ -459,6 +460,7 @@ sysEvent_t Sys_GetEvent()
 					case SDL_WINDOWEVENT_FOCUS_LOST:
 						// DG: pause the game when focus is lost, that also un-grabs the input
 						cvarSystem->SetCVarBool( "com_pause", true );
+						cvarSystem->SetCVarBool( "com_activeApp", false );
 						// DG end
 						break;
 
@@ -701,6 +703,8 @@ sysEvent_t Sys_GetEvent()
 			case SDL_JOYDEVICEADDED:
 			case SDL_JOYDEVICEREMOVED:
 			case SDL_JOYBATTERYUPDATED:
+			case SDL_CONTROLLERDEVICEADDED:
+			case SDL_CONTROLLERDEVICEREMOVED:
 				// Avoid 'unknown event' spam
 				continue;
 
@@ -805,7 +809,10 @@ sysEvent_t Sys_GetEvent()
 				}
 				continue; // just handle next event
 
+			// Avoid 'unknown event' spam
+			case SDL_TEXTEDITING:
 			case SDL_KEYMAPCHANGED:
+			case SDL_CLIPBOARDUPDATE:
 				continue; // just handle next event
 
 			default:
